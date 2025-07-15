@@ -28,25 +28,28 @@ public class MovePlate : MonoBehaviour
     {
         controller = GameObject.FindGameObjectWithTag("GameController");
 
+        // 공격 MovePlate인 경우, 해당 위치의 기물을 제거
         if (attack)
         {
             GameObject cp = controller.GetComponent<Game>().GetPosition(matrixX, matrixY);
-
-            if (cp.name == "white_king") controller.GetComponent<Game>().Winner("black");
-            if (cp.name == "black_king") controller.GetComponent<Game>().Winner("white");
-
-
             Destroy(cp);
         }
 
+        // 기존 위치 비우기
         controller.GetComponent<Game>().SetPositionEmpty(reference.GetComponent<Chessman>().GetXBoard(), reference.GetComponent<Chessman>().GetYBoard());
 
+        // 새로운 위치 설정
         reference.GetComponent<Chessman>().SetXBoard(matrixX);
         reference.GetComponent<Chessman>().SetYBoard(matrixY);
         reference.GetComponent<Chessman>().SetCoords();
 
-        controller.GetComponent<Game>().SetPosition(reference);
+        // pawnNeverMove 해제
+        if (reference.name.Contains("pawn"))
+        {
+            reference.GetComponent<Chessman>().DisableDoubleMove();
+        }
 
+        controller.GetComponent<Game>().SetPosition(reference);
         controller.GetComponent<Game>().NextTurn();
 
         reference.GetComponent<Chessman>().DestroyMovePlates();

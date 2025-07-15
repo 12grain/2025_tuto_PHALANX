@@ -8,6 +8,8 @@
         public GameObject controller;
         public GameObject movePlate;
 
+        //폰이 안움직일 경우 두 칸 이동할 수 있도록 하는 부울 변수
+        private bool pawnNeverMove = true;
         // 0~7 체스판 좌표
         private int xBoard = -1; 
         private int yBoard = -1;
@@ -22,7 +24,9 @@
         // 말 초기화: 게임 컨트롤러 찾고, 스프라이트 & 플레이어 세팅, 화면 위치 이동
         public void Activate()
         {
+
             controller = GameObject.FindGameObjectWithTag("GameController");
+
 
             // take the instantiated location and adjust the transform
             SetCoords();
@@ -59,7 +63,12 @@
             this.transform.position = new Vector3(x, y, -1.0f);
         }
 
-        public int GetXBoard()
+        public void DisableDoubleMove()
+        {
+            pawnNeverMove = false;
+        }
+
+    public int GetXBoard()
         {
             return xBoard;
         }
@@ -204,34 +213,42 @@
     public void PawnMovePlate(int x, int y)
     {
         Game sc = controller.GetComponent<Game>();
-        if (sc.PositionOnBoard(x, y))
-        {
-            // 앞으로 빈 칸 이동
-            if (sc.GetPosition(x, y) == null)
-            {
-                MovePlateSpawn(x, y);
-            }
 
-            // 오른쪽 대각선에 적이 있으면 공격용 MovePlate 생성
-            if (sc.PositionOnBoard(x + 1, y)
-                && sc.GetPosition(x + 1, y) != null
-                && sc.GetPosition(x + 1, y).GetComponent<Chessman>().player != player)
+        int direction = (player == "white") ? 1 : -1;
+
+        // 1. 한 칸 전진
+        if (sc.PositionOnBoard(x, y) && sc.GetPosition(x, y) == null)
+        {
+            MovePlateSpawn(x, y);
+
+            // 2. 두 칸 전진 (처음 움직이는 경우에만)
+            if (pawnNeverMove)
             {
-                MovePlateAttackSpawn(x + 1, y);
+                int twoStepY = y + direction;
+                if (sc.PositionOnBoard(x, twoStepY) && sc.GetPosition(x, twoStepY) == null)
+                {
+                    MovePlateSpawn(x, twoStepY);
+                }
             }
-            // 왼쪽 대각선에 적이 있으면 공격용 MovePlate 생성
-            if (sc.PositionOnBoard(x - 1, y)
-                && sc.GetPosition(x - 1, y) != null
-                && sc.GetPosition(x - 1, y).GetComponent<Chessman>().player != player)
+        }   
+
+        // 3. 대각선 공격
+        for (int dx = -1; dx <= 1; dx += 2)
+        {
+            int diagX = x + dx;
+            int diagY = y;
+            if (sc.PositionOnBoard(diagX, diagY)
+                && sc.GetPosition(diagX, diagY) != null
+                && sc.GetPosition(diagX, diagY).GetComponent<Chessman>().player != player)
             {
-                // ← 여기서 잘못된 좌표를 사용하고 있습니다!
-                MovePlateAttackSpawn(x - 1, y);
+                MovePlateAttackSpawn(diagX, diagY);
             }
         }
     }
 
-    
-        // 실제로 MovePlate 프리팹을 Instantiate 하는 두 메소드
+
+
+    // 실제로 MovePlate 프리팹을 Instantiate 하는 두 메소드
     public void MovePlateSpawn(int matrixX, int matrixY)
         {
             float x = matrixX;
