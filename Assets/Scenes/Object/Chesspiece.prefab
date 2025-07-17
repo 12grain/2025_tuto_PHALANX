@@ -103,6 +103,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   controller: {fileID: 0}
   movePlate: {fileID: 496619246893154284, guid: c42fe687b8a2b4940a1886a70ad32503, type: 3}
+  pawnNeverMove: 1
   black_queen: {fileID: -2628853326628446179, guid: 2a24f840960945545833417ff23f3e84, type: 3}
   black_knight: {fileID: -334450713805299198, guid: a55ac6d13a6debb43b61b611034811af, type: 3}
   black_bishop: {fileID: -6414592721767173361, guid: 867c9cb45a2e4e64aad7ae924d9eb655, type: 3}
