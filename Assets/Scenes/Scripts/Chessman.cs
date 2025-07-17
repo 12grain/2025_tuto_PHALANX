@@ -212,18 +212,11 @@ public class Chessman : MonoBehaviour
         if (!kingNeverMove) return;
 
         // 왼쪽 캐슬링
-        if (sc.checkLeftSide(xBoard, yBoard))
-        {
-            CastlingPlateSpawn(xBoard - 2, yBoard);
-            Debug.Log("왼쪽 비어있습니다");
-        }
-
+        if (sc.checkLeftSide(xBoard, yBoard)) CastlingPlateSpawn(xBoard - 2, yBoard);
+        
         // 오른쪽 캐슬링
-        if (sc.checkRightSide(xBoard, yBoard))
-        {
-            CastlingPlateSpawn(xBoard + 2, yBoard);
-            Debug.Log("오른쪽 비었습니다.");
-        }
+        if (sc.checkRightSide(xBoard, yBoard)) CastlingPlateSpawn(xBoard + 2, yBoard);
+
     }
 
 

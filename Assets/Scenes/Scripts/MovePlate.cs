@@ -46,6 +46,7 @@ public class MovePlate : MonoBehaviour
             NormalMove();        // 기존 이동 로직
         }
     }
+
     private void HandleCastling()
     {
         // 1) 왕 이동 (reference는 King GameObject)
@@ -87,6 +88,10 @@ public class MovePlate : MonoBehaviour
         reference.GetComponent<Chessman>().DisableCastling();
     }
 
+    public void Promotion()
+    {
+
+    }
 
     public void NormalMove()
     {
@@ -110,6 +115,13 @@ public class MovePlate : MonoBehaviour
         if (reference.name.Contains("pawn"))
         {
             reference.GetComponent<Chessman>().DisableDoubleMove();
+
+            int promotionY = reference.GetComponent<Chessman>().GetPlayer() == "white" ? 7 : 0;
+            if (matrixY == promotionY)
+            {
+                Promotion();  // 프로모션
+                return; // 턴 넘기지 않고 종료할 수도 있음
+            }
         }
 
         if (reference.name.Contains("king"))
@@ -133,6 +145,8 @@ public class MovePlate : MonoBehaviour
     {
         reference = obj;
     }
+
+
 
     //위 두 메소드는 moveplate를 생성할 때 자주 사용하게 됩니다.
 
