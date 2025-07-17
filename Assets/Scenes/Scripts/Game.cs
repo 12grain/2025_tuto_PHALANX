@@ -54,6 +54,7 @@ public class Game : MonoBehaviour
         return obj;
     }
 
+    // 이걸로 보드 위치 변경
     public void SetPosition(GameObject obj)
     {
         Chessman cm = obj.GetComponent<Chessman>();
@@ -64,6 +65,17 @@ public class Game : MonoBehaviour
     public void SetPositionEmpty(int x, int y)
     {
         positions[x, y] = null;
+    }
+
+    public bool checkLeftSide(int x, int y)
+    {
+        if (positions[x - 1, y] == null && positions[x - 2, y] == null && positions[x - 3, y] == null) return true;
+        return false;
+    }
+    public bool checkRightSide(int x, int y)
+    {
+        if (positions[x + 1, y] == null && positions[x + 2, y] == null) return true;
+        return false;
     }
 
     public GameObject GetPosition(int x, int y)
@@ -121,7 +133,7 @@ public class Game : MonoBehaviour
 
         GameObject.FindGameObjectWithTag("RestartText").GetComponent<TextMeshProUGUI>().enabled = true;
         GameObject.FindGameObjectWithTag("RestartText").GetComponent<TextMeshProUGUI>().text = "Tab To Restart";
-
+        gameOver = true;
 
     }
 }
