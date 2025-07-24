@@ -95,28 +95,51 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
          bool isKingSide = targetKingX > oldKingX;
          int rookOldX = isKingSide ? 7 : 0;
          int rookNewX = isKingSide ? targetKingX - 1 : targetKingX + 1;
-         //int y = kingCm.GetYBoard();
+        //int y = kingCm.GetYBoard();
 
- 
-         //rookObj에 afile 룩이나 h-file룩을 할당(getposition활용)
-         GameObject rookObj = game.GetPosition(rookOldX, y);
-         // 💡 여기서 동기화를 위해 ViewID를 얻어낸다
-         int rookViewID = rookObj?.GetComponent<PhotonView>()?.ViewID ?? -1;
+        /*
+                //rookObj에 afile 룩이나 h-file룩을 할당(getposition활용)
+                GameObject rookObj = game.GetPosition(rookOldX, y);
+                // 💡 여기서 동기화를 위해 ViewID를 얻어낸다
+                int rookViewID = rookObj?.GetComponent<PhotonView>()?.ViewID ?? -1;
 
-         // PhotonView.Find를 통해 모든 클라이언트가 같은 rook를 참조하게 함
-         rookObj = PhotonView.Find(rookViewID)?.gameObject;
+                // PhotonView.Find를 통해 모든 클라이언트가 같은 rook를 참조하게 함
+                rookObj = PhotonView.Find(rookViewID)?.gameObject;
 
-         //룩이 존재하고, 그 룩이 킹과 같은 플레이어(색상)일 때만 캐슬링 용 룩의 이동을 수행하는 코드
-         if (rookObj != null && rookObj.GetComponent<MultiChessMan>().GetPlayer() == kingCm.GetPlayer())
-         {
-             game.SetPositionEmpty(rookOldX, y); //이전 룩의 위치 비우기 
-             MultiChessMan rookCm = rookObj.GetComponent<MultiChessMan>(); //컴포넌트 갖고 옴
-             rookCm.SetXBoard(rookNewX); //캐슬링 규칙에 따라 룩의 위치를 변경(setXBoard, SetCoords)
-             rookCm.SetCoords();
-             game.SetPosition(rookObj); //2D배열에 룩의 새 위치 반영
-         }
+                //룩이 존재하고, 그 룩이 킹과 같은 플레이어(색상)일 때만 캐슬링 용 룩의 이동을 수행하는 코드
+                if (rookObj != null && rookObj.GetComponent<MultiChessMan>().GetPlayer() == kingCm.GetPlayer())
+                {
+                    game.SetPositionEmpty(rookOldX, y); //이전 룩의 위치 비우기 
+                    MultiChessMan rookCm = rookObj.GetComponent<MultiChessMan>(); //컴포넌트 갖고 옴
+                    rookCm.SetXBoard(rookNewX); //캐슬링 규칙에 따라 룩의 위치를 변경(setXBoard, SetCoords)
+                    rookCm.SetCoords();
+                    game.SetPosition(rookObj); //2D배열에 룩의 새 위치 반영
+                }
 
-               
+                      */
+        MultiChessMan[] allPieces = GameObject.FindObjectsByType<MultiChessMan>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+
+        GameObject rookObj = null;
+
+        foreach (MultiChessMan cm in allPieces)
+        {
+            if (cm.GetPlayer() == kingCm.GetPlayer()      // 같은 플레이어 색
+                && cm.GetXBoard() == rookOldX             // 위치가 a-file 또는 h-file
+                && cm.GetYBoard() == y                     // 같은 랭크(행)
+                && cm.name.Contains("rook"))               // 이름에 rook 포함 (또는 다른 방법으로 룩임을 구분)
+            {
+                rookObj = cm.gameObject;
+                break;
+            }
+        }
+        if (rookObj != null && rookObj.GetComponent<MultiChessMan>().GetPlayer() == kingCm.GetPlayer())
+        {
+            game.SetPositionEmpty(rookOldX, y); //이전 룩의 위치 비우기 
+            MultiChessMan rookCm = rookObj.GetComponent<MultiChessMan>(); //컴포넌트 갖고 옴
+            rookCm.SetXBoard(rookNewX); //캐슬링 규칙에 따라 룩의 위치를 변경(setXBoard, SetCoords)
+            rookCm.SetCoords();
+            game.SetPosition(rookObj); //2D배열에 룩의 새 위치 반영
+        }
 
         // 3) 턴 넘기기, 플레이트 정리 등
         game.NextTurn();
