@@ -142,7 +142,7 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
         }
 
         // 3) 턴 넘기기, 플레이트 정리 등
-        game.NextTurn();
+        game.CallNextTurn();
         kingCm.DestroyMovePlates();
         reference.GetComponent<MultiChessMan>().DisableCastling();
     }
@@ -201,7 +201,7 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
         }
 
         controller.GetComponent<MultiGame>().SetPosition(reference);
-        controller.GetComponent<MultiGame>().NextTurn();
+        controller.GetComponent<MultiGame>().CallNextTurn();
 
         reference.GetComponent<MultiChessMan>().DestroyMovePlates();
     }

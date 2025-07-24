@@ -18,10 +18,13 @@ public class MultiGame : MonoBehaviourPunCallbacks
     private GameObject[] playerWhite = new GameObject[16];
 
     private string myPlayerColor;
-    private string currentPlayer = "white";
+    private string currentPlayer ;
 
     private bool gameOver = false;
     private PhotonView pv;
+
+    private bool turnChanged = false;
+
 
     void Awake()
     {
@@ -30,6 +33,8 @@ public class MultiGame : MonoBehaviourPunCallbacks
     }
     void Start()
     {
+          currentPlayer = "white";
+
         if (PhotonNetwork.IsMasterClient)
         {
             playerWhite = new GameObject[] { Create("white_rook", 0, 0), Create("white_knight", 1, 0),
@@ -114,6 +119,9 @@ public class MultiGame : MonoBehaviourPunCallbacks
         return currentPlayer;
     }
 
+    public string GetMyPlayerColor() {
+    return myPlayerColor;
+    }
     //IsGameOver()은 체크메이트상태(게임종료상태)인지를 나타내기 위한 bool 변수 gameOver를 반환합니다.
     public bool IsGameOver()
     {
@@ -124,6 +132,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
     [PunRPC]//동시에 구현되어야 할 함수
     public void NextTurn() 
     {
+        
         if (currentPlayer == "white")
         {
             currentPlayer = "black";
@@ -132,6 +141,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         {
             currentPlayer = "white";
         }
+      
     }
 
  
@@ -139,7 +149,10 @@ public class MultiGame : MonoBehaviourPunCallbacks
 
     public void CallNextTurn()
     {
-        photonView.RPC("NextTurn", RpcTarget.AllBuffered);
+        if (PhotonNetwork.IsMasterClient)
+        {
+            photonView.RPC("NextTurn", RpcTarget.AllBuffered);
+        }
     }
 
     public void DestroyMovePlates()

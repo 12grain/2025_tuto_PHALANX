@@ -367,7 +367,8 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
     private void OnMouseUp()
     {
-        if (!controller.GetComponent<MultiGame>().IsGameOver() && controller.GetComponent<MultiGame>().GetCurrentPlayer() == player)
+        if (!controller.GetComponent<MultiGame>().IsGameOver() && controller.GetComponent<MultiGame>().GetCurrentPlayer() == player 
+            && controller.GetComponent<MultiGame>().GetCurrentPlayer() == controller.GetComponent<MultiGame>().GetMyPlayerColor() )
         {
             DestroyMovePlates();
 
