@@ -1,0 +1,452 @@
+fileFormatVersion: 2
+guid: 980774b42b1a36346bbaf0b6b14da2d5
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 3495445344643234910
+    second: sudowoodo191200028_preview_rev_1_0
+  - first:
+      213: -773789320686200630
+    second: sudowoodo191200028_preview_rev_1_1
+  - first:
+      213: -6300333147030234650
+    second: sudowoodo191200028_preview_rev_1_2
+  - first:
+      213: 453631419303983842
+    second: sudowoodo191200028_preview_rev_1_3
+  - first:
+      213: -6787553802626784322
+    second: sudowoodo191200028_preview_rev_1_4
+  - first:
+      213: -3893536821629917241
+    second: sudowoodo191200028_preview_rev_1_5
+  - first:
+      213: -809630713570942120
+    second: sudowoodo191200028_preview_rev_1_6
+  - first:
+      213: -6086262064985956750
+    second: sudowoodo191200028_preview_rev_1_7
+  - first:
+      213: 2890371205005106507
+    second: sudowoodo191200028_preview_rev_1_8
+  - first:
+      213: 4295948189955221451
+    second: sudowoodo191200028_preview_rev_1_9
+  - first:
+      213: -7359870575922965299
+    second: sudowoodo191200028_preview_rev_1_10
+  - first:
+      213: -6461334263783929745
+    second: sudowoodo191200028_preview_rev_1_11
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 256
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_0
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 86
+        width: 23
+        height: 29
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e5cb0437501528030800000000000000
+      internalID: 3495445344643234910
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_1
+      rect:
+        serializedVersion: 2
+        x: 46
+        y: 85
+        width: 24
+        height: 29
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac8128966b2f245f0800000000000000
+      internalID: -773789320686200630
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_2
+      rect:
+        serializedVersion: 2
+        x: 82
+        y: 85
+        width: 24
+        height: 30
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6e9d4a42268b098a0800000000000000
+      internalID: -6300333147030234650
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_3
+      rect:
+        serializedVersion: 2
+        x: 116
+        y: 85
+        width: 23
+        height: 30
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2eaf1965f5f9b4600800000000000000
+      internalID: 453631419303983842
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_4
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 85
+        width: 28
+        height: 30
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eb3249c47c3cdc1a0800000000000000
+      internalID: -6787553802626784322
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_5
+      rect:
+        serializedVersion: 2
+        x: 183
+        y: 85
+        width: 29
+        height: 31
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c768dab3e067f9c0800000000000000
+      internalID: -3893536821629917241
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_6
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 45
+        width: 26
+        height: 33
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 853ab56d72d93c4f0800000000000000
+      internalID: -809630713570942120
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_7
+      rect:
+        serializedVersion: 2
+        x: 45
+        y: 45
+        width: 27
+        height: 32
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 27e9396f5e0498ba0800000000000000
+      internalID: -6086262064985956750
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_8
+      rect:
+        serializedVersion: 2
+        x: 81
+        y: 45
+        width: 26
+        height: 33
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b4dd85f0c49ac1820800000000000000
+      internalID: 2890371205005106507
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_9
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 45
+        width: 26
+        height: 33
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc763cb2e164e9b30800000000000000
+      internalID: 4295948189955221451
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_10
+      rect:
+        serializedVersion: 2
+        x: 146
+        y: 45
+        width: 32
+        height: 33
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dc4134994bc7cd990800000000000000
+      internalID: -7359870575922965299
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_11
+      rect:
+        serializedVersion: 2
+        x: 182
+        y: 45
+        width: 32
+        height: 34
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f68491088bab456a0800000000000000
+      internalID: -6461334263783929745
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sudowoodo191200028_preview_rev_1_12
+      rect:
+        serializedVersion: 2
+        x: 218
+        y: 114
+        width: 2
+        height: 2
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 70ade12095e533c4f9746f9fe0623309
+      internalID: 1711816143
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 2fa58a6983f8c8e448aec8d2c87b1577
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      sudowoodo191200028_preview_rev_1_0: 3495445344643234910
+      sudowoodo191200028_preview_rev_1_1: -773789320686200630
+      sudowoodo191200028_preview_rev_1_10: -7359870575922965299
+      sudowoodo191200028_preview_rev_1_11: -6461334263783929745
+      sudowoodo191200028_preview_rev_1_12: 1711816143
+      sudowoodo191200028_preview_rev_1_2: -6300333147030234650
+      sudowoodo191200028_preview_rev_1_3: 453631419303983842
+      sudowoodo191200028_preview_rev_1_4: -6787553802626784322
+      sudowoodo191200028_preview_rev_1_5: -3893536821629917241
+      sudowoodo191200028_preview_rev_1_6: -809630713570942120
+      sudowoodo191200028_preview_rev_1_7: -6086262064985956750
+      sudowoodo191200028_preview_rev_1_8: 2890371205005106507
+      sudowoodo191200028_preview_rev_1_9: 4295948189955221451
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
