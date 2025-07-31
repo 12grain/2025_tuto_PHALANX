@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
+//using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class Chessman : MonoBehaviour
@@ -9,10 +9,10 @@ public class Chessman : MonoBehaviour
     public GameObject controller;
     public GameObject movePlate;
 
-    //ÆùÀÌ ¾È¿òÁ÷ÀÏ °æ¿ì µÎ Ä­ ÀÌµ¿ÇÒ ¼ö ÀÖµµ·Ï ÇÏ´Â ºÎ¿ï º¯¼ö
+    //ï¿½ï¿½ï¿½ï¿½ ï¿½È¿ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ Ä­ ï¿½Ìµï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Öµï¿½ï¿½ï¿½ ï¿½Ï´ï¿½ ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½
     private bool pawnNeverMove = true;
     private bool kingNeverMove = true;
-    // 0~7 Ã¼½ºÆÇ ÁÂÇ¥
+    // 0~7 Ã¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥
     private int xBoard = -1; 
     private int yBoard = -1;
 
@@ -30,7 +30,7 @@ public class Chessman : MonoBehaviour
     public Sprite black_queen, black_knight, black_bishop, black_king, black_rook, black_pawn;
     public Sprite white_queen, white_knight, white_bishop, white_king, white_rook, white_pawn;
 
-    // ¸» ÃÊ±âÈ­: °ÔÀÓ ÄÁÆ®·Ñ·¯ Ã£°í, ½ºÇÁ¶óÀÌÆ® & ÇÃ·¹ÀÌ¾î ¼¼ÆÃ, È­¸é À§Ä¡ ÀÌµ¿
+    // ï¿½ï¿½ ï¿½Ê±ï¿½È­: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ Ã£ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® & ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½, È­ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½Ìµï¿½
     public void Activate()
     {
 
@@ -159,8 +159,8 @@ public class Chessman : MonoBehaviour
         }
     }
 
-// *** ¡°LineMovePlate¡± : xIncrement, yIncrement ¹æÇâÀ¸·Î
-//    ºó Ä­ÀÌ ³ª¿Ã ¶§±îÁö °è¼Ó »ý¼º ¡æ »ó´ë ¸» ¸¸³ª¸é ¡°°ø°Ý¡± Ç¥½Ã
+// *** ï¿½ï¿½LineMovePlateï¿½ï¿½ : xIncrement, yIncrement ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//    ï¿½ï¿½ Ä­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ý¡ï¿½ Ç¥ï¿½ï¿½
     public void LineMovePlate(int xIncrement, int yIncrement)
     {
         Game sc = controller.GetComponent<Game>();
@@ -181,7 +181,7 @@ public class Chessman : MonoBehaviour
         }
     }
 
-    // *** ¡°LMovePlate¡± : ³ªÀÌÆ® ÀÌµ¿ 
+    // *** ï¿½ï¿½LMovePlateï¿½ï¿½ : ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Ìµï¿½ 
     public void LMovePlate()
     {
         PointMovePlate(xBoard + 1, yBoard + 2);
@@ -193,7 +193,7 @@ public class Chessman : MonoBehaviour
         PointMovePlate(xBoard + 2, yBoard - 1);
         PointMovePlate(xBoard - 2, yBoard - 1);
     }
-    // *** ¡°SurroundMovePlate¡± : ÁÖº¯ 8Ä­ - Å· ÀÌµ¿
+    // *** ï¿½ï¿½SurroundMovePlateï¿½ï¿½ : ï¿½Öºï¿½ 8Ä­ - Å· ï¿½Ìµï¿½
     public void SurroundMovePlate()
     {
         PointMovePlate(xBoard, yBoard + 1);
@@ -211,10 +211,10 @@ public class Chessman : MonoBehaviour
 
         if (!kingNeverMove) return;
 
-        // ¿ÞÂÊ Ä³½½¸µ
+        // ï¿½ï¿½ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½ï¿½
         if (sc.checkLeftSide(xBoard, yBoard)) CastlingPlateSpawn(xBoard - 2, yBoard);
         
-        // ¿À¸¥ÂÊ Ä³½½¸µ
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½ï¿½
         if (sc.checkRightSide(xBoard, yBoard)) CastlingPlateSpawn(xBoard + 2, yBoard);
 
     }
@@ -222,23 +222,23 @@ public class Chessman : MonoBehaviour
 
     private void CastlingPlateSpawn(int targetX, int targetY)
     {
-        // È­¸é ÁÂÇ¥ º¯È¯
+        // È­ï¿½ï¿½ ï¿½ï¿½Ç¥ ï¿½ï¿½È¯
         float x = targetX * 0.66f - 2.3f;
         float y = targetY * 0.66f - 2.3f;
 
-        // MovePlate ÀÎ½ºÅÏ½ºÈ­
+        // MovePlate ï¿½Î½ï¿½ï¿½Ï½ï¿½È­
         GameObject mp = Instantiate(movePlate, new Vector3(x, y, -3.0f), Quaternion.identity);
 
         var mpScript = mp.GetComponent<MovePlate>();
         mpScript.SetReference(gameObject);
         mpScript.SetCoords(targetX, targetY);
 
-        // ¿©±â°¡ ÇÙ½É: ÀÌ ÇÃ·¹ÀÌÆ®°¡ Ä³½½¸µ¿ëÀÓÀ» Ç¥½Ã
+        // ï¿½ï¿½ï¿½â°¡ ï¿½Ù½ï¿½: ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½
         mpScript.isCastling = true;
     }
 
 
-    // *** ¡°PointMovePlate¡± : ´ÜÀÏ ÁÂÇ¥ Ã¼Å© ¡æ ºó Ä­ÀÌ¸é MovePlate, ÀûÀÌ¸é °ø°Ý MovePlate
+    // *** ï¿½ï¿½PointMovePlateï¿½ï¿½ : ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ Ã¼Å© ï¿½ï¿½ ï¿½ï¿½ Ä­ï¿½Ì¸ï¿½ MovePlate, ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ MovePlate
     public void PointMovePlate(int x, int y)
     {
         Game sc = controller.GetComponent<Game>();
@@ -263,12 +263,12 @@ public class Chessman : MonoBehaviour
 
         int direction = (player == "white") ? 1 : -1;
 
-        // 1. ÇÑ Ä­ ÀüÁø
+        // 1. ï¿½ï¿½ Ä­ ï¿½ï¿½ï¿½ï¿½
         if (sc.PositionOnBoard(x, y) && sc.GetPosition(x, y) == null)
         {
             MovePlateSpawn(x, y);
 
-            // 2. µÎ Ä­ ÀüÁø (Ã³À½ ¿òÁ÷ÀÌ´Â °æ¿ì¿¡¸¸)
+            // 2. ï¿½ï¿½ Ä­ ï¿½ï¿½ï¿½ï¿½ (Ã³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì´ï¿½ ï¿½ï¿½ì¿¡ï¿½ï¿½)
             if (pawnNeverMove)
             {
                 int twoStepY = y + direction;
@@ -279,7 +279,7 @@ public class Chessman : MonoBehaviour
             }
         }   
 
-        // 3. ´ë°¢¼± °ø°Ý
+        // 3. ï¿½ë°¢ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         for (int dx = -1; dx <= 1; dx += 2)
         {
             int diagX = x + dx;
@@ -294,7 +294,7 @@ public class Chessman : MonoBehaviour
     }
 
    
-// ½ÇÁ¦·Î MovePlate ÇÁ¸®ÆÕÀ» Instantiate ÇÏ´Â µÎ ¸Þ¼Òµå
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ MovePlate ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Instantiate ï¿½Ï´ï¿½ ï¿½ï¿½ ï¿½Þ¼Òµï¿½
     public void MovePlateSpawn(int matrixX, int matrixY)
     {
         float x = matrixX;
