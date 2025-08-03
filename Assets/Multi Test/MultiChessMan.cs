@@ -130,6 +130,11 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         SetXBoard(x);
         SetYBoard(y);
         Activate();
+
+        // 모든 클라이언트에서 보드 배열에 등록
+        var game = GameObject.FindGameObjectWithTag("GameController")
+                             .GetComponent<MultiGame>();
+        game.SetPosition(this.gameObject);
     }
 
     public void DestroyMovePlates()
@@ -140,6 +145,41 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             Destroy(movePlates[i]);
         }
     }
+
+
+    [PunRPC]
+    public void MoveTo(int targetX, int targetY)
+    {
+        // 1) 원래 위치 빈칸 처리
+        var game = GameObject.FindGameObjectWithTag("GameController")
+                             .GetComponent<MultiGame>();
+        game.SetPositionEmpty(xBoard, yBoard);
+
+        // 2) 좌표 갱신
+        xBoard = targetX;
+        yBoard = targetY;
+        SetCoords();
+
+        // 3) 보드 배열에 재등록
+        game.SetPosition(this.gameObject);
+    }
+
+
+    [PunRPC]
+    public void DestroySelf()
+    {
+        // 1) 모든 클라이언트에서 보드 배열 갱신
+        var game = GameObject.FindGameObjectWithTag("GameController")
+                             .GetComponent<MultiGame>();
+        game.SetPositionEmpty(xBoard, yBoard);
+
+        // 2) 오너만 파괴
+        if (photonView.IsMine)
+        {
+            PhotonNetwork.Destroy(this.gameObject);
+        }
+    }
+
 
     public void InitiateMovePlates()
     {
@@ -313,13 +353,26 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         for (int dx = -1; dx <= 1; dx += 2)
         {
             int diagX = x + dx;
-            int diagY = y;
+            int diagY = y;  
             if (sc.PositionOnBoard(diagX, diagY)
                 && sc.GetPosition(diagX, diagY) != null
                 && sc.GetPosition(diagX, diagY).GetComponent<MultiChessMan>().player != player)
             {
                 MovePlateAttackSpawn(diagX, diagY);
             }
+            if (!sc.PositionOnBoard(diagX, diagY))
+            {
+                Debug.Log("보드 밖입니다.");
+            }
+            else if (sc.GetPosition(diagX, diagY) == null)
+            {
+                Debug.Log($"({diagX},{diagY})에 기물이 없습니다.");
+            }
+            else if (sc.GetPosition(diagX, diagY).GetComponent<MultiChessMan>() == null)
+            {
+                Debug.Log($"({diagX},{diagY})에 MultiChessMan 컴포넌트가 없습니다.");
+            }
+
         }
     }
 
@@ -367,12 +420,21 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
     private void OnMouseUp()
     {
+        var game = controller.GetComponent<MultiGame>();
+
         if (!controller.GetComponent<MultiGame>().IsGameOver() && controller.GetComponent<MultiGame>().GetCurrentPlayer() == player 
             && controller.GetComponent<MultiGame>().GetCurrentPlayer() == controller.GetComponent<MultiGame>().GetMyPlayerColor() )
         {
+            Debug.Log("===== 보드 상태 (이동 전) =====");
+            game.DebugPrintBoard();
+
             DestroyMovePlates();
 
             InitiateMovePlates();
+
+            // 디버그: 이동 후에도 찍어 보고 싶다면
+            Debug.Log("===== 보드 상태 (이동 후) =====");
+            game.DebugPrintBoard();
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿using Photon.Pun;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCallback
 
@@ -53,6 +54,27 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
     [PunRPC] //동시에 진행되어야하는 함수// 
     public void OnMouseUp() //실질적으로 이동을 담당하는 함수 
     {
+
+        var game = controller.GetComponent<MultiGame>();
+        int attackerID = reference.GetComponent<PhotonView>().ViewID;
+
+        // 캡처 대상이 있으면 DestroySelf RPC 호출
+        if (attack)
+        {
+            GameObject cp = game.GetPosition(matrixX, matrixY);
+            if (cp != null)
+            {
+                int capturedID = cp.GetComponent<PhotonView>().ViewID;
+                PhotonView.Find(capturedID)
+                          .RPC("DestroySelf", RpcTarget.AllBuffered);
+            }
+        }
+
+        // 이동 RPC 호출
+        PhotonView.Find(attackerID)
+                  .RPC("MoveTo", RpcTarget.AllBuffered, matrixX, matrixY);
+        NormalMove();
+        /*
         //GameObject movePiece = reference;
         pv = this.GetComponent<PhotonView>();
        
@@ -69,6 +91,8 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
             //NormalMove();        // 기존 이동 로직
             pv.RPC("NormalMove", RpcTarget.All);
         }
+        */
+      
     }
     [PunRPC] //동시에 진행되어야하는 함수
     private void HandleCastling()
@@ -155,17 +179,27 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
     }
     [PunRPC] //동시에 진행되어야하는 함수
     public void NormalMove()
-    { 
-        //viewid를 통해 상대방도 같은 reference를 참조하도록 
+    {
+        Debug.Log("NOrmal들어옴");
+        
         int PiecetargetViewID = reference.GetComponent<PhotonView>().ViewID;
         reference = PhotonView.Find(PiecetargetViewID)?.gameObject;
-
+        /*
+        var game = controller.GetComponent<MultiGame>();
         // 공격 MovePlate인 경우, 해당 위치의 기물을 제거
         if (attack)
         {
-            GameObject cp = controller.GetComponent<MultiGame>().GetPosition(matrixX, matrixY);
-            Destroy(cp);
+            GameObject cp = game.GetPosition(matrixX, matrixY);
+            if (cp != null)
+            {
+                PhotonView targetView = cp.GetComponent<PhotonView>();
+
+                // 모든 클라이언트에서 동일하게 보드 배열을 비우고 삭제하도록
+                //  → Owner든 아니든 상관없이 RPC로 실행
+                targetView.RPC("DestroySelf", RpcTarget.AllBuffered);
+            }
         }
+
 
         // 이동 전 좌표 저장
         int oldX = reference.GetComponent<MultiChessMan>().GetXBoard();
@@ -178,9 +212,8 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
         reference.GetComponent<MultiChessMan>().SetXBoard(matrixX);
         reference.GetComponent<MultiChessMan>().SetYBoard(matrixY);
         reference.GetComponent<MultiChessMan>().SetCoords();
+        */
 
-      
-        //controller.GetComponent<MultiGame>().SetPositionEmpty(oldX, oldY);
 
         // pawnNeverMove 해제
         if (reference.name.Contains("pawn"))
@@ -200,11 +233,13 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
             reference.GetComponent<MultiChessMan>().DisableCastling();
         }
 
-        controller.GetComponent<MultiGame>().SetPosition(reference);
+        //controller.GetComponent<MultiGame>().SetPosition(reference);
         controller.GetComponent<MultiGame>().CallNextTurn();
-
         reference.GetComponent<MultiChessMan>().DestroyMovePlates();
     }
+
+
+
     //SetCoords(int x, int y)는 moveplate의 좌표를 입력하기 위한 메소드입니다. 
     public void SetCoords(int x, int y)
     {

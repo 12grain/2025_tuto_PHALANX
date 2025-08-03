@@ -52,6 +52,10 @@ MonoBehaviour:
   - SetReference
   - SyncReference
   - RookMove
+  - DestroySelf
+  - MoveTo
+  - RPC_AttackMove
+  - RPC_NormalMove
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

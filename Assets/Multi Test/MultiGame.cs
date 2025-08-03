@@ -23,8 +23,27 @@ public class MultiGame : MonoBehaviourPunCallbacks
     private bool gameOver = false;
     private PhotonView pv;
 
-    private bool turnChanged = false;
+    //private bool turnChanged = false;
 
+    public void DebugPrintBoard()
+    {
+        for (int y = 7; y >= 0; y--)   // 체스판 맨 위(7)부터 아래(0)까지
+        {
+            string line = "";
+            for (int x = 0; x < 8; x++)
+            {
+                var piece = positions[x, y];
+                if (piece == null)
+                    line += ". ";
+                else
+                {
+                    string col = piece.GetComponent<MultiChessMan>().GetPlayer() == "white" ? "W " : "B ";
+                    line += col;
+                }
+            }
+            Debug.Log($"rank {y}: {line}");
+        }
+    }
 
     void Awake()
     {
@@ -149,10 +168,8 @@ public class MultiGame : MonoBehaviourPunCallbacks
 
     public void CallNextTurn()
     {
-        if (PhotonNetwork.IsMasterClient)
-        {
             photonView.RPC("NextTurn", RpcTarget.AllBuffered);
-        }
+
     }
 
     public void DestroyMovePlates()
