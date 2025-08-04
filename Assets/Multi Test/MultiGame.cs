@@ -18,7 +18,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
     private GameObject[] playerWhite = new GameObject[16];
 
     private string myPlayerColor;
-    private string currentPlayer ;
+    private string currentPlayer = "white";
 
     private bool gameOver = false;
     private PhotonView pv;
@@ -33,7 +33,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
     }
     void Start()
     {
-          currentPlayer = "white";
+          
 
         if (PhotonNetwork.IsMasterClient)
         {

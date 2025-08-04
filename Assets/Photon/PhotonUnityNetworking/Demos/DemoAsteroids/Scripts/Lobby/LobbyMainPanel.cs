@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+
 namespace Photon.Pun.Demo.Asteroids
 {
     public class LobbyMainPanel : MonoBehaviourPunCallbacks
@@ -39,7 +40,7 @@ namespace Photon.Pun.Demo.Asteroids
 
         private Dictionary<string, RoomInfo> cachedRoomList;
         private Dictionary<string, GameObject> roomListEntries;
-        private Dictionary<int, GameObject> playerListEntries;
+        public Dictionary<int, GameObject> playerListEntries;
 
         #region UNITY
 
@@ -134,16 +135,18 @@ namespace Photon.Pun.Demo.Asteroids
 
             StartGameButton.gameObject.SetActive(CheckPlayersReady());
 
+            /*
             string myColor = PhotonNetwork.IsMasterClient ? "white" : "black"; //방장이면 흰색 참가자면 검은 색
 
             PlayerPrefs.SetString("MyColor", myColor);
             Debug.Log($"[색상 배정] 나는 {myColor} 입니다.");
-
+            */
             Hashtable props = new Hashtable
             {
                 {AsteroidsGame.PLAYER_LOADED_LEVEL, false}
             };
             PhotonNetwork.LocalPlayer.SetCustomProperties(props);
+           
         }
 
         public override void OnLeftRoom()
@@ -200,16 +203,68 @@ namespace Photon.Pun.Demo.Asteroids
                 object isPlayerReady;
                 if (changedProps.TryGetValue(AsteroidsGame.PLAYER_READY, out isPlayerReady))
                 {
-                    entry.GetComponent<PlayerListEntry>().SetPlayerReady((bool) isPlayerReady);
+                    entry.GetComponent<PlayerListEntry>().SetPlayerReady((bool)isPlayerReady);
                 }
             }
 
             StartGameButton.gameObject.SetActive(CheckPlayersReady());
+
+            //컬러 세팅 부분 
+            if (changedProps.TryGetValue(AsteroidsGame.PLAYER_COLOR, out object colorValue))
+            {
+                string changedColor = (string)colorValue;
+
+                if (targetPlayer.ActorNumber != PhotonNetwork.LocalPlayer.ActorNumber)
+                {
+                    string myColor = changedColor == "white" ? "black" : "white";
+
+                    // 이미 같은 색이면 무시 (루프 방지)
+                    if (PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue(AsteroidsGame.PLAYER_COLOR, out object currentColorObj))
+                    {
+                        string currentColor = (string)currentColorObj;
+                        if (currentColor == myColor)
+                        {
+                            // 이미 같은 색이면 아무 작업도 하지 않음
+                            return;
+                        }
+                    }
+
+                    // 색저장
+                    PlayerPrefs.SetString("MyColor", myColor);
+
+                    //  CustomProperties 갱신 루프 방지
+                    Hashtable props = new Hashtable
+        {
+            { AsteroidsGame.PLAYER_COLOR, myColor }
+        };
+                    PhotonNetwork.LocalPlayer.SetCustomProperties(props);
+
+                    // ✅ [4] 내 UI 토글 갱신
+                    if (playerListEntries.TryGetValue(PhotonNetwork.LocalPlayer.ActorNumber, out GameObject myEntry))
+                    {
+                        var playerEntry = myEntry.GetComponent<PlayerListEntry>();
+
+
+                        // 🔁 루프 방지: 리스너 일시 제거
+                        playerEntry.PlayerBlackWhiteToggle.onValueChanged.RemoveAllListeners();
+
+                        playerEntry.PlayerBlackWhiteToggle.isOn = (myColor == "white");
+                        
+
+                        // 🔁 리스너 다시 연결
+                        playerEntry.PlayerBlackWhiteToggle.onValueChanged.AddListener(playerEntry.OnColorToggleChanged);  
+                        
+                        playerEntry.UpdateOtherToggleUIVisual(myColor);
+                    }
+                  
+                }
+
+            }
         }
 
         #endregion
 
-        #region UI CALLBACKS
+            #region UI CALLBACKS
 
         public void OnBackButtonClicked()
         {
@@ -372,6 +427,12 @@ namespace Photon.Pun.Demo.Asteroids
 
                 roomListEntries.Add(info.Name, entry);
             }
+        }
+
+
+        public void PopUpCreatRRoomPanel() 
+        {
+            CreateRoomPanel.SetActive(true);        
         }
     }
 }
