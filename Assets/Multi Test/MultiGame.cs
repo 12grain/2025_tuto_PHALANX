@@ -160,7 +160,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         {
             currentPlayer = "white";
         }
-      
+        Debug.Log("½ÇÇàµÊ");
     }
 
  
@@ -168,8 +168,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
 
     public void CallNextTurn()
     {
-            photonView.RPC("NextTurn", RpcTarget.AllBuffered);
-
+        photonView.RPC("NextTurn", RpcTarget.AllBuffered);
     }
 
     public void DestroyMovePlates()

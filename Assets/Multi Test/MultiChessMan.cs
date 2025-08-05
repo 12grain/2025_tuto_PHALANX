@@ -360,18 +360,6 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             {
                 MovePlateAttackSpawn(diagX, diagY);
             }
-            if (!sc.PositionOnBoard(diagX, diagY))
-            {
-                Debug.Log("보드 밖입니다.");
-            }
-            else if (sc.GetPosition(diagX, diagY) == null)
-            {
-                Debug.Log($"({diagX},{diagY})에 기물이 없습니다.");
-            }
-            else if (sc.GetPosition(diagX, diagY).GetComponent<MultiChessMan>() == null)
-            {
-                Debug.Log($"({diagX},{diagY})에 MultiChessMan 컴포넌트가 없습니다.");
-            }
 
         }
     }

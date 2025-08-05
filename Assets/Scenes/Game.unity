@@ -1193,6 +1193,7 @@ MonoBehaviour:
   rookButton: {fileID: 1616683458}
   bishopButton: {fileID: 151263793}
   knightButton: {fileID: 875849520}
+  pawnToPromote: {fileID: 0}
   chesspiecePrefab: {fileID: 1859702523106945436, guid: a4271001d841cb943b6b4d06338f78f9, type: 3}
 --- !u!1 &875849518
 GameObject:

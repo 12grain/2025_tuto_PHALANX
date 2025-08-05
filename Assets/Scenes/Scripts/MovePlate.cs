@@ -87,7 +87,7 @@ public class MovePlate : MonoBehaviour
         kingCm.DestroyMovePlates();
         reference.GetComponent<Chessman>().DisableCastling();
     }
-
+    /*
     private void Promotion()
     {
         Chessman pawnCm = reference.GetComponent<Chessman>();
@@ -104,7 +104,7 @@ public class MovePlate : MonoBehaviour
 
         Destroy(gameObject);
     }
-
+    */
     public void NormalMove()
     {
 
@@ -131,7 +131,7 @@ public class MovePlate : MonoBehaviour
             int promotionY = reference.GetComponent<Chessman>().GetPlayer() == "white" ? 2 : 0;
             if (matrixY == promotionY)
             {
-                Promotion();  // 프로모션
+
                 return; // 턴 넘기지 않고 종료할 수도 있음
             }
         }

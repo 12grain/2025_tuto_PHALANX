@@ -1,4 +1,5 @@
 ﻿using Photon.Pun;
+using Photon.Pun.Demo.PunBasics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -51,48 +52,41 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
             controller = GameObject.FindGameObjectWithTag("GameController");
     }
 
-    [PunRPC] //동시에 진행되어야하는 함수// 
     public void OnMouseUp() //실질적으로 이동을 담당하는 함수 
     {
-
-        var game = controller.GetComponent<MultiGame>();
-        int attackerID = reference.GetComponent<PhotonView>().ViewID;
-
-        // 캡처 대상이 있으면 DestroySelf RPC 호출
-        if (attack)
-        {
-            GameObject cp = game.GetPosition(matrixX, matrixY);
-            if (cp != null)
-            {
-                int capturedID = cp.GetComponent<PhotonView>().ViewID;
-                PhotonView.Find(capturedID)
-                          .RPC("DestroySelf", RpcTarget.AllBuffered);
-            }
-        }
-
-        // 이동 RPC 호출
-        PhotonView.Find(attackerID)
-                  .RPC("MoveTo", RpcTarget.AllBuffered, matrixX, matrixY);
-        NormalMove();
-        /*
         //GameObject movePiece = reference;
         pv = this.GetComponent<PhotonView>();
-       
-
-
+        var game = controller.GetComponent<MultiGame>();
 
         if (isCastling)
         {
-            // HandleCastling();    // 킹과 룩을 동시에 이동시키는 로직
+            //HandleCastling();    // 킹과 룩을 동시에 이동시키는 로직
             pv.RPC("HandleCastling", RpcTarget.All);
         }
         else
         {
-            //NormalMove();        // 기존 이동 로직
-            pv.RPC("NormalMove", RpcTarget.All);
+            int attackerID = reference.GetComponent<PhotonView>().ViewID;
+
+
+
+            // 캡처 대상이 있으면 DestroySelf RPC 호출
+            if (attack)
+            {
+                GameObject cp = game.GetPosition(matrixX, matrixY);
+                if (cp != null)
+                {
+                    int capturedID = cp.GetComponent<PhotonView>().ViewID;
+                    PhotonView.Find(capturedID)
+                              .RPC("DestroySelf", RpcTarget.AllBuffered);
+                }
+            }
+
+            // 이동 RPC 호출
+            PhotonView.Find(attackerID)
+                      .RPC("MoveTo", RpcTarget.AllBuffered, matrixX, matrixY);
+            NormalMove();
         }
-        */
-      
+        game.CallNextTurn();
     }
     [PunRPC] //동시에 진행되어야하는 함수
     private void HandleCastling()
@@ -119,28 +113,7 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
          bool isKingSide = targetKingX > oldKingX;
          int rookOldX = isKingSide ? 7 : 0;
          int rookNewX = isKingSide ? targetKingX - 1 : targetKingX + 1;
-        //int y = kingCm.GetYBoard();
 
-        /*
-                //rookObj에 afile 룩이나 h-file룩을 할당(getposition활용)
-                GameObject rookObj = game.GetPosition(rookOldX, y);
-                // 💡 여기서 동기화를 위해 ViewID를 얻어낸다
-                int rookViewID = rookObj?.GetComponent<PhotonView>()?.ViewID ?? -1;
-
-                // PhotonView.Find를 통해 모든 클라이언트가 같은 rook를 참조하게 함
-                rookObj = PhotonView.Find(rookViewID)?.gameObject;
-
-                //룩이 존재하고, 그 룩이 킹과 같은 플레이어(색상)일 때만 캐슬링 용 룩의 이동을 수행하는 코드
-                if (rookObj != null && rookObj.GetComponent<MultiChessMan>().GetPlayer() == kingCm.GetPlayer())
-                {
-                    game.SetPositionEmpty(rookOldX, y); //이전 룩의 위치 비우기 
-                    MultiChessMan rookCm = rookObj.GetComponent<MultiChessMan>(); //컴포넌트 갖고 옴
-                    rookCm.SetXBoard(rookNewX); //캐슬링 규칙에 따라 룩의 위치를 변경(setXBoard, SetCoords)
-                    rookCm.SetCoords();
-                    game.SetPosition(rookObj); //2D배열에 룩의 새 위치 반영
-                }
-
-                      */
         MultiChessMan[] allPieces = GameObject.FindObjectsByType<MultiChessMan>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
 
         GameObject rookObj = null;
@@ -172,59 +145,29 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
     }
     
 
-    [PunRPC] //동시에 진행되어야하는 함수[PunRPC] //동시에 진행되어야하는 함수
-    public void Promotion()
-    {
-
-    }
     [PunRPC] //동시에 진행되어야하는 함수
     public void NormalMove()
     {
-        Debug.Log("NOrmal들어옴");
+        Debug.Log("Normal들어옴");
         
         int PiecetargetViewID = reference.GetComponent<PhotonView>().ViewID;
         reference = PhotonView.Find(PiecetargetViewID)?.gameObject;
-        /*
-        var game = controller.GetComponent<MultiGame>();
-        // 공격 MovePlate인 경우, 해당 위치의 기물을 제거
-        if (attack)
-        {
-            GameObject cp = game.GetPosition(matrixX, matrixY);
-            if (cp != null)
-            {
-                PhotonView targetView = cp.GetComponent<PhotonView>();
-
-                // 모든 클라이언트에서 동일하게 보드 배열을 비우고 삭제하도록
-                //  → Owner든 아니든 상관없이 RPC로 실행
-                targetView.RPC("DestroySelf", RpcTarget.AllBuffered);
-            }
-        }
-
-
-        // 이동 전 좌표 저장
-        int oldX = reference.GetComponent<MultiChessMan>().GetXBoard();
-        int oldY = reference.GetComponent<MultiChessMan>().GetYBoard();
-
-        // 기존 위치 비우기
-        controller.GetComponent<MultiGame>().SetPositionEmpty(reference.GetComponent<MultiChessMan>().GetXBoard(), reference.GetComponent<MultiChessMan>().GetYBoard());
-
-        // 새로운 위치 설정
-        reference.GetComponent<MultiChessMan>().SetXBoard(matrixX);
-        reference.GetComponent<MultiChessMan>().SetYBoard(matrixY);
-        reference.GetComponent<MultiChessMan>().SetCoords();
-        */
 
 
         // pawnNeverMove 해제
         if (reference.name.Contains("pawn"))
         {
             reference.GetComponent<MultiChessMan>().DisableDoubleMove();
-                
-            int promotionY = reference.GetComponent<MultiChessMan>().GetPlayer() == "white" ? 7 : 0;
+            reference.GetComponent<MultiChessMan>().DestroyMovePlates();
+            int promotionY = reference.GetComponent<MultiChessMan>().GetPlayer() == "white" ? 2 : 0;
             if (matrixY == promotionY)
             {
-                Promotion();  // 프로모션
-                return; // 턴 넘기지 않고 종료할 수도 있음
+                int pawnID = reference.GetComponent<PhotonView>().ViewID;
+                controller.GetComponent<PhotonView>()
+                          .RPC("RPC_ShowPromotionUI",
+                               reference.GetComponent<PhotonView>().Owner,
+                               pawnID);
+                return; // 프로모션의 경우 여기서 멈춤
             }
         }
 
@@ -234,7 +177,7 @@ public class MultiMovePlate : MonoBehaviourPunCallbacks, IPunInstantiateMagicCal
         }
 
         //controller.GetComponent<MultiGame>().SetPosition(reference);
-        controller.GetComponent<MultiGame>().CallNextTurn();
+        //controller.GetComponent<MultiGame>().CallNextTurn();
         reference.GetComponent<MultiChessMan>().DestroyMovePlates();
     }
 
