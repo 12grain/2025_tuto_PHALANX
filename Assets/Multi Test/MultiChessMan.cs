@@ -81,17 +81,20 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
     public void SetCoords()
     {
-        float x = xBoard;
-        float y = yBoard;
+        var game = GameObject.FindGameObjectWithTag("GameController")
+                             .GetComponent<MultiGame>();
 
-        x *= 0.66f;
-        y *= 0.66f;
+        float t = game.tileSize;
+        Vector2 origin = game.boardOrigin;
 
-        x += -2.3f;
-        y += -2.3f;
+        float worldX = origin.x + xBoard * t;
+        float worldY = origin.y + yBoard * t;
 
-        this.transform.position = new Vector3(x, y, -1.0f);
+        // z 값은 기존 변수를 유지하거나 -1로 고정
+        float z = transform.position.z;
+        transform.position = new Vector3(worldX, worldY, z);
     }
+
 
     public void DisableDoubleMove()
     {
@@ -135,16 +138,82 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         var game = GameObject.FindGameObjectWithTag("GameController")
                              .GetComponent<MultiGame>();
         game.SetPosition(this.gameObject);
+
+        // ↓ 여기서 추가 ↓
+        var sr = GetComponent<SpriteRenderer>();
+        sr.sortingLayerName = "Pieces";
+        sr.sortingOrder = 2;
+
+
+        // === 스케일 자동 조정 ===
+        if (sr != null && sr.sprite != null)
+        {
+            // sprite 원본 폭 (월드 단위) - bounds는 transform.localScale을 이미 반영함
+            float spriteWidth = sr.sprite.bounds.size.x;
+
+            // 가져온 tileSize 사용
+            float tile = game.tileSize-0.1f;
+
+            // 칸 크기에 대해 sprite가 차지할 비율(예: 0.8 => 칸의 80% 너비로 맞춤)
+            float fillRatio = 0.65f;
+
+            // 원하는 실제 폭 = tile * fillRatio
+            float desiredWorldWidth = tile * fillRatio;
+
+            // 현재 sprite.bounds.size.x 는 '원본 1.0 scale'에서의 폭이지만, 
+            // sr.sprite.bounds.size.x * transform.localScale.x = 현재 world 폭.
+            // 우리는 transform.localScale을 다시 설정할 것이므로 아래처럼 계산:
+            float originalSpriteWidth = sr.sprite.bounds.size.x; // units at scale=1
+
+            if (originalSpriteWidth > 0.0001f)
+            {
+                float scale = desiredWorldWidth / originalSpriteWidth;
+                transform.localScale = new Vector3(scale, scale, 1f);
+            }
+        }
+
+        // 최종적으로 보드 배열에 등록 및 coords 세팅
+        SetCoords();
+        var gameRef = GameObject.FindGameObjectWithTag("GameController").GetComponent<MultiGame>();
+        gameRef.SetPosition(this.gameObject);
+
+        // 정렬 레이어 지정 (안정성)
+        if (sr != null)
+        {
+            sr.sortingLayerName = "Pieces";
+            sr.sortingOrder = 2;
+        }
     }
 
     public void DestroyMovePlates()
     {
         GameObject[] movePlates = GameObject.FindGameObjectsWithTag("MovePlate");
+
         for (int i = 0; i < movePlates.Length; i++)
         {
-            Destroy(movePlates[i]);
+            PhotonView pv = movePlates[i].GetComponent<PhotonView>();
+
+            if (pv != null)
+            {
+                // 오너만 파괴 명령을 내릴 수 있음
+                if (pv.IsMine)
+                {
+                    PhotonNetwork.Destroy(movePlates[i]);
+                }
+                else
+                {
+                    // 내가 오너가 아니면 오너에게 파괴 요청
+                    pv.RPC("DestroySelf", pv.Owner);
+                }
+            }
+            else
+            {
+                // PhotonView 없는 경우(로컬 오브젝트) 그냥 삭제
+                Destroy(movePlates[i]);
+            }
         }
     }
+
 
 
     [PunRPC]
@@ -297,7 +366,7 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
         // MovePlate 인스턴스화
         object[] initData = new object[] { targetX, targetY };
-        GameObject mp = PhotonNetwork.Instantiate("MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity, 0, initData);
+        GameObject mp = PhotonNetwork.Instantiate("Pieces/MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity, 0, initData);
 
         var mpScript = mp.GetComponent<MultiMovePlate>();
         mpScript.SetReference(gameObject);
@@ -378,7 +447,14 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         y += -2.3f;
 
         object[] initData = new object[] { matrixX, matrixY };
-        GameObject mp = PhotonNetwork.Instantiate("MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity, 0, initData);
+        GameObject mp = PhotonNetwork.Instantiate("Pieces/MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity, 0, initData);
+
+        var sr = mp.GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.sortingLayerName = "UI"; // 또는 "Pieces"와 같은 레이어
+            sr.sortingOrder = 3;        // 기물보다 높은 값
+        }
 
         MultiMovePlate mpScript = mp.GetComponent<MultiMovePlate>();
         mpScript.SetReference(gameObject);
@@ -397,8 +473,15 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         y += -2.3f;
 
         object[] initData = new object[] { matrixX, matrixY };
-        GameObject mp = PhotonNetwork.Instantiate("MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity, 0, initData);
+        GameObject mp = PhotonNetwork.Instantiate("Pieces/MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity, 0, initData);
         //GameObject mp = PhotonNetwork.Instantiate("MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity);
+
+        var sr = mp.GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.sortingLayerName = "UI"; // 또는 "Pieces"와 같은 레이어
+            sr.sortingOrder = 3;        // 기물보다 높은 값
+        }
 
         MultiMovePlate mpScript = mp.GetComponent<MultiMovePlate>();
         mpScript.attack = true;
@@ -409,6 +492,7 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     private void OnMouseUp()
     {
         var game = controller.GetComponent<MultiGame>();
+        Debug.Log("진입");
 
         if (!controller.GetComponent<MultiGame>().IsGameOver() && controller.GetComponent<MultiGame>().GetCurrentPlayer() == player 
             && controller.GetComponent<MultiGame>().GetCurrentPlayer() == controller.GetComponent<MultiGame>().GetMyPlayerColor() )

@@ -11,6 +11,8 @@ using UnityEngine.UIElements;
 public class MultiGame : MonoBehaviourPunCallbacks
 {
     public GameObject chesspiece;
+    public Sprite boardSprite;
+    public Sprite backgroundSprite;
 
     // Positions and team for each chesspiece
     private GameObject[,] positions = new GameObject[8, 8];
@@ -22,6 +24,11 @@ public class MultiGame : MonoBehaviourPunCallbacks
 
     private bool gameOver = false;
     private PhotonView pv;
+
+    public float tileSize = 0.66f;                 // 자동 재계산 되지만 기본값
+    public Vector2 boardOrigin = Vector2.zero;     // 0,0 칸(=a1)의 월드 좌표(센터)
+    public float boardWorldWidth = 0f;
+    public float boardWorldHeight = 0f;
 
     //private bool turnChanged = false;
 
@@ -50,9 +57,29 @@ public class MultiGame : MonoBehaviourPunCallbacks
         myPlayerColor = PlayerPrefs.GetString("MyColor"); 
         Debug.Log("내 플레이어 색은: " + myPlayerColor);
     }
+
     void Start()
     {
-          currentPlayer = "white";
+
+        //배경 배치
+        GameObject background = new GameObject("background");
+        background.transform.position = new Vector3(0f, 0f, 0);
+        var backgroundSr = background.AddComponent<SpriteRenderer>();
+        backgroundSr.sprite = backgroundSprite;
+        backgroundSr.sortingLayerName = "Board";
+        backgroundSr.sortingOrder = 0;
+
+        //board 배치
+        GameObject board = new GameObject("Board");
+        board.transform.position = new Vector3(0f, 0f, 0);
+        var boardSr = board.AddComponent<SpriteRenderer>();
+        boardSr.sprite = boardSprite;
+        boardSr.sortingLayerName = "Board";
+        boardSr.sortingOrder = 1;
+
+        RecalculateBoardMetrics(); //보드 재배치 (새로운 에셋으로 인한 크기변경)
+
+        currentPlayer = "white";
 
         if (PhotonNetwork.IsMasterClient)
         {
@@ -79,19 +106,41 @@ public class MultiGame : MonoBehaviourPunCallbacks
         }
         
         }
-        
     }
 
+    public void RecalculateBoardMetrics()
+    {
+        GameObject boardObj = GameObject.Find("Board");
+        if (boardObj == null) return;
+
+        var sr = boardObj.GetComponent<SpriteRenderer>();
+        if (sr == null || sr.sprite == null) return;
+
+        // 보드의 실제 월드 사이즈
+        boardWorldWidth = sr.bounds.size.x;
+        boardWorldHeight = sr.bounds.size.y;
+
+        // 한 칸 크기
+        tileSize = boardWorldWidth / 8f;
+
+        // (0,0) 칸의 CENTER 좌표 계산:
+        // boardObj.transform.position 은 보드의 중심(가정). 
+        // 왼쪽 하단 모서리 = center - (width/2, height/2)
+        float left = boardObj.transform.position.x - boardWorldWidth / 2f;
+        float bottom = boardObj.transform.position.y - boardWorldHeight / 2f;
+
+        // (0,0) 타일의 center = left + tileSize/2, bottom + tileSize/2
+        boardOrigin = new Vector2(left + tileSize * 0.5f, bottom + tileSize * 0.5f);
+
+        Debug.Log($"Recalc: boardW={boardWorldWidth}, tileSize={tileSize}, boardOrigin={boardOrigin}");
+    }
 
     public GameObject Create(string name, int x, int y)
     {
-        GameObject obj = PhotonNetwork.Instantiate("MultiChesspiece", new Vector3(0, 0, 1), Quaternion.identity);
-        MultiChessMan cm = obj.GetComponent<MultiChessMan>();
-        //cm.name = name;
-        //cm.SetXBoard(x);
-        //cm.SetYBoard(y);
-        //cm.Activate();
-     
+        Vector3 spawnPos = new Vector3(0f, 0f, 0);
+        GameObject obj = PhotonNetwork.Instantiate("Pieces/MultiChesspiece", spawnPos, Quaternion.identity);
+        var sr = obj.GetComponent<SpriteRenderer>();
+
         PhotonView pv = obj.GetComponent<PhotonView>();
         pv.RPC("SetupSprite", RpcTarget.AllBuffered, name, x, y);
         return obj;

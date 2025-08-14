@@ -52,7 +52,7 @@ public class PromotionManager : MonoBehaviourPunCallbacks
         // 2) 네트워크로 새 기물 생성
         Vector3 worldPos = new Vector3(x * 0.66f - 2.3f, y * 0.66f - 2.3f, -1f);
         GameObject newPiece = PhotonNetwork.Instantiate(
-            "MultiChesspiece", worldPos, Quaternion.identity
+            "Pieces/MultiChesspiece", worldPos, Quaternion.identity
         );
         // 이름 세팅
         string ownerColor = pawnToPromote.GetPlayer();
