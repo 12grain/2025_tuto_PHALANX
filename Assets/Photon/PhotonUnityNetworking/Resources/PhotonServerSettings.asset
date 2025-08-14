@@ -60,6 +60,9 @@ MonoBehaviour:
   - RequestMovePiece
   - RPC_ExecuteCastling
   - RPC_UpdateMovedStatus
+  - RequestPawnMoveAndShowPromotionUI
+  - RequestPromotion
+  - RPC_SetInteractionState
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

@@ -13,6 +13,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
     public GameObject chesspiece;
     public Sprite boardSprite;
     public Sprite backgroundSprite;
+    public PromotionManager promotionManager;
 
     // Positions and team for each chesspiece
     private GameObject[,] positions = new GameObject[8, 8];
@@ -23,6 +24,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
     private string currentPlayer ;
 
     private bool gameOver = false;
+    public bool isInteractionBlocked = false;
     private PhotonView pv;
 
     public float tileSize = 0.66f;                 // 자동 재계산 되지만 기본값
@@ -337,6 +339,95 @@ public class MultiGame : MonoBehaviourPunCallbacks
     }
 
 
+    [PunRPC]
+    public void RequestPawnMoveAndShowPromotionUI(int pawnViewID, int targetX, int targetY, int capturedID)
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        // 1. pawnView를 맨 처음에 딱 한 번만 찾아서 변수에 저장합니다.
+        PhotonView pawnView = PhotonView.Find(pawnViewID);
+
+        // 2. pawnView를 찾지 못했다면, 아무것도 하지 않고 함수를 종료합니다.
+        if (pawnView == null)
+        {
+            Debug.LogError("프로모션을 요청한 폰을 찾을 수 없습니다: " + pawnViewID);
+            return;
+        }
+
+        // 3. 폰 이동 및 상태 업데이트 (이제 pawnView 변수를 재사용합니다)
+        if (capturedID != -1)
+        {
+            PhotonView.Find(capturedID)?.RPC("DestroySelf", RpcTarget.AllBuffered);
+        }
+        pawnView.RPC("MoveTo", RpcTarget.AllBuffered, targetX, targetY);
+        pawnView.RPC("RPC_UpdateMovedStatus", RpcTarget.All);
+
+        // 4. 상호작용을 막습니다.
+        photonView.RPC("RPC_SetInteractionState", RpcTarget.All, true);
+
+        // 5. 폰의 색깔을 가져와서 올바른 플레이어를 찾습니다.
+        string pawnColor = pawnView.GetComponent<MultiChessMan>().GetPlayer();
+        Photon.Realtime.Player targetPlayer = null;
+
+        if (pawnColor == "white")
+        {
+            targetPlayer = PhotonNetwork.MasterClient;
+        }
+        else
+        {
+            // PlayerListOthers는 플레이어가 2명일 때만 안전합니다.
+            if (PhotonNetwork.PlayerListOthers.Length > 0)
+            {
+                targetPlayer = PhotonNetwork.PlayerListOthers[0];
+            }
+        }
+
+        // 6. 정확하게 찾은 대상에게 RPC를 보냅니다.
+        if (targetPlayer != null)
+        {
+            promotionManager.GetComponent<PhotonView>().RPC("RPC_ShowPromotionUI", targetPlayer, pawnViewID);
+        }
+        else
+        {
+            Debug.LogError("프로모션 UI를 띄울 상대를 찾지 못했습니다!");
+        }
+    }
+
+
+    // 요청 2 처리: 플레이어의 선택을 받아 실제 프로모션을 실행하고 턴을 넘김
+    [PunRPC]
+    public void RequestPromotion(int pawnViewID, string pieceType)
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        GameObject pawnObj = PhotonView.Find(pawnViewID)?.gameObject;
+        if (pawnObj == null) return;
+
+        MultiChessMan pawnCm = pawnObj.GetComponent<MultiChessMan>();
+        int x = pawnCm.GetXBoard();
+        int y = pawnCm.GetYBoard();
+        string playerColor = pawnCm.GetPlayer();
+
+        // 1. 기존 폰을 보드 배열에서 제거하고 네트워크에서 파괴
+        SetPositionEmpty(x, y);
+        PhotonNetwork.Destroy(pawnObj);
+
+        // 2. 새 기물 생성
+        string newPieceName = playerColor + "_" + pieceType;
+        Create(newPieceName, x, y); // 기존의 Create 함수를 재활용
+
+        // ▼▼▼ 프로모션이 끝났으니, 다시 상호작용을 허용하도록 RPC 호출 ▼▼▼
+        photonView.RPC("RPC_SetInteractionState", RpcTarget.All, false);
+
+        // 3. 모든 작업이 끝났으므로 턴을 넘김
+        CallNextTurn();
+    }
+
+    [PunRPC]
+    public void RPC_SetInteractionState(bool isBlocked)
+    {
+        this.isInteractionBlocked = isBlocked;
+    }
 
     //Update() 유니티에서 제공하는 유니티 이벤트 메소드로 프레임이 재생될때마다 호출되는 메소드 입니다
     //gameOver가 true이고 마우스 좌클릭 상태일때 게임을 재시작합니다.

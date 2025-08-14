@@ -119,20 +119,22 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
     public void SetCoords()
     {
-        var game = GameObject.FindGameObjectWithTag("GameController")
-                             .GetComponent<MultiGame>();
+        // 이전에 Awake()에서 찾아둔 gameController 변수를 사용합니다.
+        if (gameController == null)
+        {
+            Debug.LogError($"SetCoords Error: gameController is not assigned on {this.name}!");
+            return;
+        }
 
-        float t = game.tileSize;
-        Vector2 origin = game.boardOrigin;
+        float t = gameController.tileSize;
+        Vector2 origin = gameController.boardOrigin;
 
         float worldX = origin.x + xBoard * t;
         float worldY = origin.y + yBoard * t;
 
-        // z 값은 기존 변수를 유지하거나 -1로 고정
-        float z = transform.position.z;
-        transform.position = new Vector3(worldX, worldY, z);
+        // z 값은 -1로 고정하여 안정성을 높입니다.
+        transform.position = new Vector3(worldX, worldY, -1.0f);
     }
-
 
     public void DisableDoubleMove()
     {
@@ -237,30 +239,37 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
+    // MultiChessMan.cs의 ExecuteMove 함수
     public void ExecuteMove(int targetX, int targetY, bool isAttack, bool isCastle)
     {
-        // 내가 소유한 말이 아니더라도, 방장에게 '요청'은 보낼 수 있다.
-        // GameController에 있는 PhotonView를 가져온다.
         var gameControllerPV = controller.GetComponent<PhotonView>();
         if (gameControllerPV == null) return;
 
-        // 잡히는 말의 ViewID를 찾는다. 없으면 -1
+        // 프로모션 조건인지 확인
+        bool isPromotion = (this.name.Contains("pawn") && ((player == "white" && targetY == 2) || (player == "black" && targetY == 5)));
+
+        // 잡히는 말의 ViewID 찾기
         int capturedID = -1;
         if (isAttack)
         {
             GameObject capturedPiece = controller.GetComponent<MultiGame>().GetPosition(targetX, targetY);
-            if (capturedPiece != null)
-            {
-                capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
-            }
+            if (capturedPiece != null) capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
         }
 
-        // 방장(MasterClient)에게 이동을 요청하는 RPC를 보낸다.
-        // 필요한 모든 정보를 파라미터로 넘겨준다.
-        gameControllerPV.RPC("RequestMovePiece", RpcTarget.MasterClient,
-            photonView.ViewID, targetX, targetY, capturedID, isCastle);
+        // 조건에 따라 다른 RPC를 호출
+        if (isPromotion)
+        {
+            // 프로모션일 경우: 방장에게 '이동 후 UI 표시'를 요청
+            gameControllerPV.RPC("RequestPawnMoveAndShowPromotionUI", RpcTarget.MasterClient,
+                photonView.ViewID, targetX, targetY, capturedID);
+        }
+        else
+        {
+            // 일반 이동/캐슬링일 경우: 기존의 이동 요청
+            gameControllerPV.RPC("RequestMovePiece", RpcTarget.MasterClient,
+                photonView.ViewID, targetX, targetY, capturedID, isCastle);
+        }
 
-        // 이동 후 생성되어 있던 모든 MovePlate를 즉시 제거한다.
         DestroyMovePlates();
     }
 
@@ -351,24 +360,33 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     //    빈 칸이 나올 때까지 계속 생성 → 상대 말 만나면 “공격” 표시
     public void LineMovePlate(int xIncrement, int yIncrement)
     {
-        MultiGame sc = controller.GetComponent<MultiGame>();
+        // Awake에서 캐싱해둔 gameController를 사용하는 것이 더 안정적입니다.
+        if (gameController == null) return;
 
         int x = xBoard + xIncrement;
         int y = yBoard + yIncrement;
 
-        while (sc.PositionOnBoard(x, y) && sc.GetPosition(x, y) == null)
+        // 1. 경로가 비어있는 동안에는 일반 MovePlate를 계속 생성합니다.
+        while (gameController.PositionOnBoard(x, y) && gameController.GetPosition(x, y) == null)
         {
             MovePlateSpawn(x, y);
             x += xIncrement;
             y += yIncrement;
         }
 
-        if (sc.PositionOnBoard(x, y) && sc.GetPosition(x, y).GetComponent<MultiChessMan>().player != player)
+        // 2. 루프가 끝난 지점(장애물을 만난 지점)을 다시 한번 확인합니다.
+        if (gameController.PositionOnBoard(x, y))
         {
-            MovePlateAttackSpawn(x, y);
+            // 3. 그곳에 있는 기물을 가져옵니다.
+            GameObject targetPiece = gameController.GetPosition(x, y);
+
+            // 4. 기물이 존재하고, 그 기물이 내 편이 아닐 경우에만 공격 MovePlate를 생성합니다.
+            if (targetPiece != null && targetPiece.GetComponent<MultiChessMan>().player != this.player)
+            {
+                MovePlateAttackSpawn(x, y);
+            }
         }
     }
-
     // *** “LMovePlate” : 나이트 이동 
     public void LMovePlate()
     {
@@ -547,14 +565,17 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     {
         var game = controller.GetComponent<MultiGame>();
 
-        if (!controller.GetComponent<MultiGame>().IsGameOver() && controller.GetComponent<MultiGame>().GetCurrentPlayer() == player 
-            && controller.GetComponent<MultiGame>().GetCurrentPlayer() == controller.GetComponent<MultiGame>().GetMyPlayerColor() )
-        {
 
+        // 이전에 Awake()에서 캐싱해둔 gameController 변수를 사용해야 합니다.
+        if (gameController == null) return;
+
+        // ▼▼▼ !gameController.isInteractionBlocked 조건을 이 if문에 추가합니다 ▼▼▼
+        if (!gameController.IsGameOver() && !gameController.isInteractionBlocked && gameController.GetCurrentPlayer() == player
+            && gameController.GetCurrentPlayer() == gameController.GetMyPlayerColor())
+        {
             DestroyMovePlates();
 
-            InitiateMovePlates();
-
+            InitiateMovePlates(); 
         }
     }
 

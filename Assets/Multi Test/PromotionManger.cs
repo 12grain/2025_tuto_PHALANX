@@ -39,33 +39,16 @@ public class PromotionManager : MonoBehaviourPunCallbacks
         Debug.Log("판넬소환");
     }
 
+    // PromotionManager.cs 의 PromoteAs 함수
     void PromoteAs(string pieceType)
     {
-        // 1) 기존 폰 보드 배열에서 제거
-        int x = pawnToPromote.GetXBoard();
-        int y = pawnToPromote.GetYBoard();
-        gameController.SetPositionEmpty(x, y);
-
-        // 그리고 네트워크 파괴
-        pawnToPromote.photonView.RPC("DestroySelf", RpcTarget.AllBuffered);
-
-        // 2) 네트워크로 새 기물 생성
-        Vector3 worldPos = new Vector3(x * 0.66f - 2.3f, y * 0.66f - 2.3f, -1f);
-        GameObject newPiece = PhotonNetwork.Instantiate(
-            "Pieces/MultiChesspiece", worldPos, Quaternion.identity
-        );
-        // 이름 세팅
-        string ownerColor = pawnToPromote.GetPlayer();
-        newPiece.name = ownerColor + "_" + pieceType;
-
-        // 3) SetupSprite 로 로직 초기화
-        //    (이 RPC 안에서 SetPosition 도 해 주도록 미리 작성해 두세요)
-        newPiece.GetComponent<PhotonView>()
-                .RPC("SetupSprite",
-                     RpcTarget.AllBuffered,
-                     newPiece.name, x, y);
-
-        // 4) UI 닫고 턴 전환
+        // UI를 즉시 숨김
         promotionPanel.SetActive(false);
+
+        if (pawnToPromote == null) return;
+
+        // 방장에게 "이 폰을 이 타입으로 바꿔주세요" 라고 요청하는 RPC를 보냄
+        gameController.GetComponent<PhotonView>().RPC("RequestPromotion", RpcTarget.MasterClient,
+            pawnToPromote.photonView.ViewID, pieceType);
     }
 }

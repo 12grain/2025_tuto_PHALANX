@@ -958,6 +958,79 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!1 &803424230
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 803424232}
+  - component: {fileID: 803424231}
+  - component: {fileID: 803424233}
+  m_Layer: 0
+  m_Name: PromotionManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &803424231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 803424230}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 128e75672a0031c4e8e8ed6fa335c7af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  promotionPanel: {fileID: 2103532606}
+  queenButton: {fileID: 102007271}
+  rookButton: {fileID: 1213494617}
+  bishopButton: {fileID: 1780577659}
+  knightButton: {fileID: 596645860}
+  chesspiecePrefab: {fileID: 496619246893154284, guid: 848bc47deae09b04bbd2beb88113c8eb, type: 3}
+--- !u!4 &803424232
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 803424230}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 26.229338, y: 6.588344, z: -0.23028722}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &803424233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 803424230}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ObservedComponentsFoldoutOpen: 1
+  Group: 0
+  prefixField: -1
+  Synchronization: 3
+  OwnershipTransfer: 0
+  observableSearch: 2
+  ObservedComponents: []
+  sceneViewId: 2
+  InstantiationId: 0
+  isRuntimeInstantiated: 0
 --- !u!1 &1160864555
 GameObject:
   m_ObjectHideFlags: 0
@@ -1838,7 +1911,6 @@ GameObject:
   - component: {fileID: 2061911576}
   - component: {fileID: 2061911577}
   - component: {fileID: 2061911578}
-  - component: {fileID: 2061911579}
   m_Layer: 0
   m_Name: Controller
   m_TagString: GameController
@@ -1876,6 +1948,7 @@ MonoBehaviour:
   chesspiece: {fileID: 1859702523106945436, guid: f6662a9d4a8ad5040a6defd5fceed787, type: 3}
   boardSprite: {fileID: 7841750413799554831, guid: 1a10bcc18a2b0884d877ee255f959ce8, type: 3}
   backgroundSprite: {fileID: 1208040086343421634, guid: e525854b28f7df740a0bd1bb6d24fe75, type: 3}
+  promotionManager: {fileID: 803424231}
   tileSize: 0.58
   boardOrigin: {x: 0, y: 0}
   boardWorldWidth: 0
@@ -1902,24 +1975,6 @@ MonoBehaviour:
   sceneViewId: 1
   InstantiationId: 0
   isRuntimeInstantiated: 0
---- !u!114 &2061911579
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2061911574}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 128e75672a0031c4e8e8ed6fa335c7af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  promotionPanel: {fileID: 2103532606}
-  queenButton: {fileID: 102007271}
-  rookButton: {fileID: 1213494617}
-  bishopButton: {fileID: 1780577659}
-  knightButton: {fileID: 596645860}
-  chesspiecePrefab: {fileID: 496619246893154284, guid: 848bc47deae09b04bbd2beb88113c8eb, type: 3}
 --- !u!1 &2103532606
 GameObject:
   m_ObjectHideFlags: 0
@@ -2008,3 +2063,4 @@ SceneRoots:
   - {fileID: 2061911576}
   - {fileID: 1160864558}
   - {fileID: 720588949}
+  - {fileID: 803424232}
