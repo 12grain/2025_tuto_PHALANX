@@ -134,7 +134,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.58, y: 0.58}
+  m_Size: {x: 0.7, y: 0.7}
   m_EdgeRadius: 0
 --- !u!114 &1395012767510863257
 MonoBehaviour:
@@ -162,7 +162,7 @@ MonoBehaviour:
   white_kingP: {fileID: 7651887421977685848, guid: 3fe7baaa539f70e4eb5097c04164dded, type: 3}
   white_rookP: {fileID: 5858852469831328582, guid: 6b4af29ec458f7643889e7bf68487872, type: 3}
   white_pawnP: {fileID: 8445592998277578410, guid: 678ca49fa2abce344b6eec26adb1f2db, type: 3}
-  black_queen: {fileID: 0}
+  black_queen: {fileID: -7779958110830305896, guid: a05dfc8da21b3f940a99e1cebc09ce52, type: 3}
   black_knight: {fileID: 0}
   black_bishop: {fileID: 0}
   black_king: {fileID: 0}

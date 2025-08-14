@@ -807,7 +807,7 @@ MonoBehaviour:
   m_Intensity: 1
   m_LightVolumeIntensity: 1
   m_LightVolumeEnabled: 0
-  m_ApplyToSortingLayers: 00000000
+  m_ApplyToSortingLayers: 00000000857a6baed913d88a4fa0eca2
   m_LightCookieSprite: {fileID: 0}
   m_DeprecatedPointLightCookieSprite: {fileID: 0}
   m_LightOrder: 0
@@ -823,8 +823,8 @@ MonoBehaviour:
   m_ShadowVolumeIntensityEnabled: 0
   m_ShadowVolumeIntensity: 0.75
   m_LocalBounds:
-    m_Center: {x: 0, y: -0.00000011920929, z: 0}
-    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -1876,7 +1876,7 @@ MonoBehaviour:
   chesspiece: {fileID: 1859702523106945436, guid: f6662a9d4a8ad5040a6defd5fceed787, type: 3}
   boardSprite: {fileID: 7841750413799554831, guid: 1a10bcc18a2b0884d877ee255f959ce8, type: 3}
   backgroundSprite: {fileID: 1208040086343421634, guid: e525854b28f7df740a0bd1bb6d24fe75, type: 3}
-  tileSize: 0.66
+  tileSize: 0.58
   boardOrigin: {x: 0, y: 0}
   boardWorldWidth: 0
   boardWorldHeight: 0
@@ -1919,7 +1919,7 @@ MonoBehaviour:
   rookButton: {fileID: 1213494617}
   bishopButton: {fileID: 1780577659}
   knightButton: {fileID: 596645860}
-  chesspiecePrefab: {fileID: 1859702523106945436, guid: e3678add7d2e04348ba4183d3644021c, type: 3}
+  chesspiecePrefab: {fileID: 496619246893154284, guid: 848bc47deae09b04bbd2beb88113c8eb, type: 3}
 --- !u!1 &2103532606
 GameObject:
   m_ObjectHideFlags: 0
