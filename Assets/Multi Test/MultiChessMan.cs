@@ -1,10 +1,11 @@
 using Photon.Pun;
 using UnityEngine;
-using UnityEngine.U2D;
-using static UnityEngine.GraphicsBuffer;
+using System.Collections;
 
 public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable 
 {
+
+
     // References
     public GameObject controller;
     private MultiGame gameController; // 스크립트 참조를 저장할 변수
@@ -22,6 +23,11 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
     // Variable to keep track of "black" player of "white" player
     private string player;
+
+
+    [Header("Animation Settings")]
+    public float moveDuration = 0.3f; // 말이 이동하는 데 걸리는 시간 (초)
+    public float hopHeight = 0.5f;    // 나이트가 점프하는 높이
 
     // Chessman.cs
     public string GetPlayer()
@@ -239,57 +245,78 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
-    // MultiChessMan.cs의 ExecuteMove 함수
+    // MultiChessMan.cs
+
     public void ExecuteMove(int targetX, int targetY, bool isAttack, bool isCastle)
     {
-        var gameControllerPV = controller.GetComponent<PhotonView>();
-        if (gameControllerPV == null) return;
+        // 1. Awake에서 캐싱해둔 gameController를 사용 (안전하고 효율적)
+        if (gameController == null) return;
 
-        // 프로모션 조건인지 확인
-        bool isPromotion = (this.name.Contains("pawn") && ((player == "white" && targetY == 2) || (player == "black" && targetY == 5)));
+        // 2. 프로모션 조건인지 정확하게 확인 (white는 7번, black은 0번 행)
+        bool isPromotion = (this.name.Contains("pawn") &&
+                           ((player == "white" && targetY == 2) || (player == "black" && targetY == 5)));
 
-        // 잡히는 말의 ViewID 찾기
-        int capturedID = -1;
-        if (isAttack)
+        // 3. 프로모션이 '아닌' 모든 일반 이동/캐슬링의 경우
+        if (!isPromotion)
         {
-            GameObject capturedPiece = controller.GetComponent<MultiGame>().GetPosition(targetX, targetY);
-            if (capturedPiece != null) capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
-        }
+            // 잡히는 말이 있는지 확인
+            int capturedID = -1;
+            if (isAttack)
+            {
+                GameObject capturedPiece = gameController.GetPosition(targetX, targetY);
+                if (capturedPiece != null) capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
+            }
 
-        // 조건에 따라 다른 RPC를 호출
-        if (isPromotion)
-        {
-            // 프로모션일 경우: 방장에게 '이동 후 UI 표시'를 요청
-            gameControllerPV.RPC("RequestPawnMoveAndShowPromotionUI", RpcTarget.MasterClient,
-                photonView.ViewID, targetX, targetY, capturedID);
-        }
-        else
-        {
-            // 일반 이동/캐슬링일 경우: 기존의 이동 요청
-            gameControllerPV.RPC("RequestMovePiece", RpcTarget.MasterClient,
+            // 방장에게 '일반 이동'을 요청하는 RPC를 보냄
+            gameController.GetComponent<PhotonView>().RPC("RequestMovePiece", RpcTarget.MasterClient,
                 photonView.ViewID, targetX, targetY, capturedID, isCastle);
         }
+        // 4. 프로모션인 '특별한' 경우
+        else
+        {
+            // 잡히는 말이 있는지 확인 (프로모션과 동시에 잡는 경우)
+            int capturedID = -1;
+            if (isAttack)
+            {
+                GameObject capturedPiece = gameController.GetPosition(targetX, targetY);
+                if (capturedPiece != null) capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
+            }
 
+            // 방장에게 RPC를 보내는 대신, 로컬의 PromotionManager UI를 직접 띄운다.
+            PromotionManager.Instance.ShowPromotionUI(this, targetX, targetY, isAttack, capturedID);
+        }
+
+        // 5. 어떤 경우든, 이동을 시작했으니 MovePlate는 모두 제거
         DestroyMovePlates();
     }
 
 
 
     [PunRPC]
-    public void MoveTo(int targetX, int targetY)
+    public void RPC_AnimateMove(int targetX, int targetY)
     {
-        // 1) 원래 위치 빈칸 처리
-        var game = GameObject.FindGameObjectWithTag("GameController")
-                             .GetComponent<MultiGame>();
-        game.SetPositionEmpty(xBoard, yBoard);
-
-        // 2) 좌표 갱신
+        // 1. 게임의 논리적 상태를 먼저 즉시 업데이트 (매우 중요!)
+        gameController.SetPositionEmpty(xBoard, yBoard); // 원래 있던 칸 비우기
         xBoard = targetX;
         yBoard = targetY;
-        SetCoords();
+        gameController.SetPosition(this.gameObject); // 새 칸에 등록하기
 
-        // 3) 보드 배열에 재등록
-        game.SetPosition(this.gameObject);
+        // 2. 목표 월드 좌표 계산
+        Vector3 targetPosition = new Vector3(
+            gameController.boardOrigin.x + xBoard * gameController.tileSize,
+            gameController.boardOrigin.y + yBoard * gameController.tileSize,
+            -1.0f // z 위치 고정
+        );
+
+        // 3. 기물 종류에 따라 다른 애니메이션 코루틴을 실행
+        if (this.name.Contains("knight"))
+        {
+            StartCoroutine(AnimateHop(targetPosition));
+        }
+        else
+        {
+            StartCoroutine(AnimateSlide(targetPosition));
+        }
     }
 
 
@@ -598,5 +625,44 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             // 좌표와 위치 갱신
             transform.position = pos;
         }
+    }
+
+    private IEnumerator AnimateSlide(Vector3 targetPosition)
+    {
+        Vector3 startPosition = transform.position;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < moveDuration)
+        {
+            // 시간에 따라 시작 위치와 목표 위치 사이를 부드럽게 보간(Lerp)
+            transform.position = Vector3.Lerp(startPosition, targetPosition, elapsedTime / moveDuration);
+            elapsedTime += Time.deltaTime;
+            yield return null; // 다음 프레임까지 대기
+        }
+
+        // 애니메이션이 끝난 후 정확한 위치에 고정
+        transform.position = targetPosition;
+    }
+
+    // 2. 나이트 이동 애니메이션 (홉/점프)
+    private IEnumerator AnimateHop(Vector3 targetPosition)
+    {
+        Vector3 startPosition = transform.position;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < moveDuration)
+        {
+            // x, z축은 선형으로 움직이되, y축(높이)은 위아래로 움직여 점프 효과를 줌
+            float progress = elapsedTime / moveDuration;
+            Vector3 currentPos = Vector3.Lerp(startPosition, targetPosition, progress);
+            currentPos.y += hopHeight * Mathf.Sin(progress * Mathf.PI); // Sin 함수로 부드러운 아크 생성
+
+            transform.position = currentPos;
+            elapsedTime += Time.deltaTime;
+            yield return null; // 다음 프레임까지 대기
+        }
+
+        // 애니메이션이 끝난 후 정확한 위치에 고정
+        transform.position = targetPosition;
     }
 }

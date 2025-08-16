@@ -63,6 +63,8 @@ MonoBehaviour:
   - RequestPawnMoveAndShowPromotionUI
   - RequestPromotion
   - RPC_SetInteractionState
+  - RPC_AnimateMove
+  - RPC_ExecutePromotion
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

@@ -150,6 +150,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   controller: {fileID: 0}
   movePlate: {fileID: 496619246893154284, guid: 764539a881b6c7c4d8997736aa6a6064, type: 3}
+  moveDuration: 0.3
+  hopHeight: 0.5
   black_queenP: {fileID: 6645289695748201938, guid: 157063b1b13094e40ac515e3e97b43f6, type: 3}
   black_knightP: {fileID: 5679192021803627342, guid: 64ebe3a85acb4c548b4c4903a9e10e30, type: 3}
   black_bishopP: {fileID: 559377119057321143, guid: 7567e2b32f937874792d1112fedc5551, type: 3}

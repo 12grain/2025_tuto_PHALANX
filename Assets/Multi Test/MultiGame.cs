@@ -228,14 +228,12 @@ public class MultiGame : MonoBehaviourPunCallbacks
         }
         else // 일반 이동/공격 요청일 경우
         {
-            // 1. 잡히는 말이 있으면 파괴 RPC 실행
             if (capturedID != -1)
             {
                 PhotonView.Find(capturedID)?.RPC("DestroySelf", RpcTarget.AllBuffered);
             }
-
-            // 2. 공격하는 말을 이동시키는 RPC 실행
-            PhotonView.Find(attackerID)?.RPC("MoveTo", RpcTarget.AllBuffered, targetX, targetY);
+            // ▼▼▼ "MoveTo" -> "RPC_AnimateMove" 로 변경! ▼▼▼
+            PhotonView.Find(attackerID)?.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY);
         }
 
         // ▼▼▼ 말의 첫 이동 상태를 업데이트하는 RPC 호출 ▼▼▼
@@ -314,9 +312,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         SetPositionEmpty(startKingX, y);
 
         // ▼▼▼ 이 부분이 수정되었습니다 ▼▼▼
-        kingCm.SetXBoard(kingTargetX); // 1. 내부 X좌표를 먼저 바꾸고
-                                       // kingCm.SetYBoard(y); // y는 그대로지만, 명확성을 위해 써줘도 좋습니다.
-        kingCm.SetCoords();           // 2. 바뀐 내부 좌표를 보고 실제 위치를 옮기게 한다.
+        kingObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, kingTargetX, y);         // 2. 바뀐 내부 좌표를 보고 실제 위치를 옮기게 한다.
 
         SetPosition(kingObj);
 
@@ -331,66 +327,52 @@ public class MultiGame : MonoBehaviourPunCallbacks
             SetPositionEmpty(rookStartX, y);
 
             // ▼▼▼ 룩도 똑같이 수정되었습니다 ▼▼▼
-            rookCm.SetXBoard(rookTargetX); // 1. 내부 X좌표를 먼저 바꾸고
-            rookCm.SetCoords();            // 2. 실제 위치를 옮기게 한다.
+            rookObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, rookTargetX, y);
 
             SetPosition(rookObj);
         }
     }
 
+    // MultiGame.cs 에 추가 (기존 RequestPawnMoveAndShowPromotionUI는 삭제)
 
     [PunRPC]
-    public void RequestPawnMoveAndShowPromotionUI(int pawnViewID, int targetX, int targetY, int capturedID)
+    public void RPC_ExecutePromotion(int pawnViewID, int targetX, int targetY, int capturedID, string pieceType)
     {
         if (!PhotonNetwork.IsMasterClient) return;
 
-        // 1. pawnView를 맨 처음에 딱 한 번만 찾아서 변수에 저장합니다.
-        PhotonView pawnView = PhotonView.Find(pawnViewID);
-
-        // 2. pawnView를 찾지 못했다면, 아무것도 하지 않고 함수를 종료합니다.
-        if (pawnView == null)
-        {
-            Debug.LogError("프로모션을 요청한 폰을 찾을 수 없습니다: " + pawnViewID);
-            return;
-        }
-
-        // 3. 폰 이동 및 상태 업데이트 (이제 pawnView 변수를 재사용합니다)
+        // 1. 잡을 말이 있으면 먼저 파괴
         if (capturedID != -1)
         {
             PhotonView.Find(capturedID)?.RPC("DestroySelf", RpcTarget.AllBuffered);
         }
-        pawnView.RPC("MoveTo", RpcTarget.AllBuffered, targetX, targetY);
-        pawnView.RPC("RPC_UpdateMovedStatus", RpcTarget.All);
 
-        // 4. 상호작용을 막습니다.
-        photonView.RPC("RPC_SetInteractionState", RpcTarget.All, true);
+        // 2. 프로모션할 폰의 정보를 가져온 뒤 파괴
+        GameObject pawnObj = PhotonView.Find(pawnViewID)?.gameObject;
+        if (pawnObj == null) return;
 
-        // 5. 폰의 색깔을 가져와서 올바른 플레이어를 찾습니다.
-        string pawnColor = pawnView.GetComponent<MultiChessMan>().GetPlayer();
-        Photon.Realtime.Player targetPlayer = null;
+        MultiChessMan pawnCm = pawnObj.GetComponent<MultiChessMan>();
+        int startX = pawnCm.GetXBoard();
+        int startY = pawnCm.GetYBoard();
+        string playerColor = pawnCm.GetPlayer();
 
-        if (pawnColor == "white")
+        SetPositionEmpty(startX, startY);
+        PhotonNetwork.Destroy(pawnObj);
+
+        // 3. 새로운 기물을 폰의 '원래 있던 위치'에 생성
+        string newPieceName = playerColor + "_" + pieceType;
+        GameObject newPiece = Create(newPieceName, startX, startY);
+
+        // 4. 생성된 새 기물이 애니메이션과 함께 '목표 위치'로 이동하도록 명령
+        if (newPiece != null)
         {
-            targetPlayer = PhotonNetwork.MasterClient;
-        }
-        else
-        {
-            // PlayerListOthers는 플레이어가 2명일 때만 안전합니다.
-            if (PhotonNetwork.PlayerListOthers.Length > 0)
-            {
-                targetPlayer = PhotonNetwork.PlayerListOthers[0];
-            }
+            newPiece.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY);
         }
 
-        // 6. 정확하게 찾은 대상에게 RPC를 보냅니다.
-        if (targetPlayer != null)
-        {
-            promotionManager.GetComponent<PhotonView>().RPC("RPC_ShowPromotionUI", targetPlayer, pawnViewID);
-        }
-        else
-        {
-            Debug.LogError("프로모션 UI를 띄울 상대를 찾지 못했습니다!");
-        }
+        // 5. 프로모션이 끝났으니 상호작용을 다시 허용
+        photonView.RPC("RPC_SetInteractionState", RpcTarget.All, false);
+
+        // 6. 턴을 넘김
+        CallNextTurn();
     }
 
 
