@@ -232,8 +232,10 @@ public class MultiGame : MonoBehaviourPunCallbacks
             {
                 PhotonView.Find(capturedID)?.RPC("DestroySelf", RpcTarget.AllBuffered);
             }
-            // ▼▼▼ "MoveTo" -> "RPC_AnimateMove" 로 변경! ▼▼▼
-            PhotonView.Find(attackerID)?.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY);
+            // ▼▼▼ 여기에 세 번째 파라미터로 '공격 여부'를 전달합니다 ▼▼▼
+            // capturedID가 -1이 아니면 true (공격), 맞으면 false (일반 이동)
+            bool isCapture = (capturedID != -1);
+            PhotonView.Find(attackerID)?.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, isCapture);
         }
 
         // ▼▼▼ 말의 첫 이동 상태를 업데이트하는 RPC 호출 ▼▼▼
@@ -312,7 +314,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         SetPositionEmpty(startKingX, y);
 
         // ▼▼▼ 이 부분이 수정되었습니다 ▼▼▼
-        kingObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, kingTargetX, y);         // 2. 바뀐 내부 좌표를 보고 실제 위치를 옮기게 한다.
+        kingObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, kingTargetX, y, false);         // 2. 바뀐 내부 좌표를 보고 실제 위치를 옮기게 한다.
 
         SetPosition(kingObj);
 
@@ -327,7 +329,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
             SetPositionEmpty(rookStartX, y);
 
             // ▼▼▼ 룩도 똑같이 수정되었습니다 ▼▼▼
-            rookObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, rookTargetX, y);
+            rookObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, rookTargetX, y, false);
 
             SetPosition(rookObj);
         }
@@ -365,7 +367,12 @@ public class MultiGame : MonoBehaviourPunCallbacks
         // 4. 생성된 새 기물이 애니메이션과 함께 '목표 위치'로 이동하도록 명령
         if (newPiece != null)
         {
-            newPiece.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY);
+            // ▼▼▼ 이 부분이 수정되었습니다! ▼▼▼
+            // 이 프로모션이 공격이었는지 여부를 isCapture 변수에 저장합니다.
+            bool isCapture = (capturedID != -1);
+
+            // AnimateMove를 호출할 때 isCapture 값을 그대로 전달합니다.
+            newPiece.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, isCapture);
         }
 
         // 5. 프로모션이 끝났으니 상호작용을 다시 허용

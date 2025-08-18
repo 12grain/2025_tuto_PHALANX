@@ -1,6 +1,7 @@
 using Photon.Pun;
-using UnityEngine;
 using System.Collections;
+using System.Text.RegularExpressions;
+using UnityEngine;
 
 public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable 
 {
@@ -293,8 +294,14 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
 
     [PunRPC]
-    public void RPC_AnimateMove(int targetX, int targetY)
+    public void RPC_AnimateMove(int targetX, int targetY, bool isCapture)
     {
+        // 애니메이션이 시작될 때 모든 클라이언트가 '움직이는 소리'를 재생
+        if (!isCapture)
+        {
+            SoundManager.Instance.PlayMoveSound();
+        }
+
         // 1. 게임의 논리적 상태를 먼저 즉시 업데이트 (매우 중요!)
         gameController.SetPositionEmpty(xBoard, yBoard); // 원래 있던 칸 비우기
         xBoard = targetX;
@@ -323,6 +330,8 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     public void DestroySelf()
     {
+        SoundManager.Instance.PlayKillSound();
+
         // 1) 모든 클라이언트에서 보드 배열 갱신
         var game = GameObject.FindGameObjectWithTag("GameController")
                              .GetComponent<MultiGame>();

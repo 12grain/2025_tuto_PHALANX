@@ -112,10 +112,11 @@ namespace Photon.Pun.Demo.PunBasics
 			}else{
 
 				LogFeedback("Connecting...");
-				
-				// #Critical, we must first and foremost connect to Photon Online Server.
-				PhotonNetwork.ConnectUsingSettings();
+
+                // #Critical, we must first and foremost connect to Photon Online Server.
                 PhotonNetwork.GameVersion = this.gameVersion;
+                PhotonNetwork.ConnectUsingSettings();
+                
 			}
 		}
 
@@ -146,27 +147,25 @@ namespace Photon.Pun.Demo.PunBasics
         /// Called after the connection to the master is established and authenticated
         /// </summary>
         public override void OnConnectedToMaster()
-		{
-            // we don't want to do anything if we are not attempting to join a room. 
-			// this case where isConnecting is false is typically when you lost or quit the game, when this level is loaded, OnConnectedToMaster will be called, in that case
-			// we don't want to do anything.
-			if (isConnecting)
-			{
-				LogFeedback("OnConnectedToMaster: Next -> try to Join Random Room");
-				Debug.Log("PUN Basics Tutorial/Launcher: OnConnectedToMaster() was called by PUN. Now this client is connected and could join a room.\n Calling: PhotonNetwork.JoinRandomRoom(); Operation will fail if no room found");
-		
-				// #Critical: The first we try to do is to join a potential existing room. If there is, good, else, we'll be called back with OnJoinRandomFailed()
-				PhotonNetwork.JoinRandomRoom();
-			}
-		}
+        {
+            // isConnecting 플래그는 그대로 유지하여, 게임에서 졌을 때가 아닌
+            // 최초 접속 시에만 로비에 입장하도록 합니다.
+            if (isConnecting)
+            {
+                Debug.Log("마스터 서버에 연결되었습니다. 이제 로비에 접속합니다.");
 
-		/// <summary>
-		/// Called when a JoinRandom() call failed. The parameter provides ErrorCode and message.
-		/// </summary>
-		/// <remarks>
-		/// Most likely all rooms are full or no rooms are available. <br/>
-		/// </remarks>
-		public override void OnJoinRandomFailed(short returnCode, string message)
+                // ▼▼▼ 랜덤 룸에 바로 들어가는 대신, 로비에 접속해서 방 목록을 볼 수 있게 합니다. ▼▼▼
+                PhotonNetwork.JoinLobby();
+            }
+        }
+
+        /// <summary>
+        /// Called when a JoinRandom() call failed. The parameter provides ErrorCode and message.
+        /// </summary>
+        /// <remarks>
+        /// Most likely all rooms are full or no rooms are available. <br/>
+        /// </remarks>
+        public override void OnJoinRandomFailed(short returnCode, string message)
 		{
 			LogFeedback("<Color=Red>OnJoinRandomFailed</Color>: Next -> Create a new Room");
 			Debug.Log("PUN Basics Tutorial/Launcher:OnJoinRandomFailed() was called by PUN. No random room available, so we create one.\nCalling: PhotonNetwork.CreateRoom");

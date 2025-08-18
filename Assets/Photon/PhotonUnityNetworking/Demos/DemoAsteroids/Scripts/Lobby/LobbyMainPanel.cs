@@ -247,19 +247,34 @@ namespace Photon.Pun.Demo.Asteroids
             PhotonNetwork.LeaveRoom();
         }
 
+        // LobbyMainPanel.cs
+
         public void OnLoginButtonClicked()
         {
             string playerName = PlayerNameInput.text;
 
             if (!playerName.Equals(""))
             {
+                // 1. 플레이어 이름 설정
                 PhotonNetwork.LocalPlayer.NickName = playerName;
+
+                // ▼▼▼ 이 부분이 핵심입니다 ▼▼▼
+                // 2. 게임 버전을 모든 클라이언트가 동일하도록 "0.1" 같은 고정된 값으로 설정합니다.
+                PhotonNetwork.GameVersion = "0.1";
+
+                // 3. 접속 지역을 한국("kr")으로 고정합니다. (선택 사항이지만 가장 확실한 방법)
+                // 이 설정을 사용하려면 PhotonServerSettings에서 Region을 'Best Region'이 아닌
+                // 특정 지역(예: Asia)으로 먼저 설정해두는 것이 좋습니다.
+                // PhotonNetwork.PhotonServerSettings.AppSettings.FixedRegion = "kr";
+
+                // 4. 위에서 설정한 정보로 포톤 서버에 접속을 시작합니다.
                 PhotonNetwork.ConnectUsingSettings();
             }
             else
             {
                 Debug.LogError("Player Name is invalid.");
             }
+            Debug.Log("접속");
         }
 
         public void OnRoomListButtonClicked()
