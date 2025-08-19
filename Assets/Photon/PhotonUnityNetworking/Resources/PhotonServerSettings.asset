@@ -28,7 +28,7 @@ MonoBehaviour:
     AuthMode: 0
     EnableLobbyStatistics: 0
     NetworkLogging: 1
-  DevRegion: jp
+  DevRegion: 
   PunLogging: 0
   EnableSupportLogger: 0
   RunInBackground: 1
@@ -52,6 +52,14 @@ MonoBehaviour:
   - SetReference
   - SyncReference
   - RookMove
+  - DestroySelf
+  - MoveTo
+  - RPC_AttackMove
+  - RPC_NormalMove
+  - RPC_ShowPromotionUI
+  - RequestMovePiece
+  - RPC_ExecuteCastling
+  - RPC_UpdateMovedStatus
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
