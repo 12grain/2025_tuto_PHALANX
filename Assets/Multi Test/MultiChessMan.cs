@@ -7,11 +7,15 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 {
     // References
     public GameObject controller;
+    private MultiGame gameController; // 스크립트 참조를 저장할 변수
     public GameObject movePlate;
 
     //폰이 안움직일 경우 두 칸 이동할 수 있도록 하는 부울 변수
     private bool pawnNeverMove = true;
     private bool kingNeverMove = true;
+    private bool rookNeverMove = true; // 룩을 위한 변수 추가
+
+
     // 0~7 체스판 좌표
     private int xBoard = -1;
     private int yBoard = -1;
@@ -25,6 +29,27 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         return player;
     }
 
+    // 이 킹이 움직인 적이 없는지 외부에서 확인할 수 있게 해주는 함수
+    public bool GetKingNeverMove()
+    {
+        return this.kingNeverMove;
+    }
+
+    // 이 룩이 움직인 적이 없는지 외부에서 확인할 수 있게 해주는 함수
+    public bool GetRookNeverMove()
+    {
+        return this.rookNeverMove;
+    }
+
+    // MultiChessMan.cs 에 추가
+    [PunRPC]
+    public void RPC_UpdateMovedStatus()
+    {
+        // 이제 이 말은 처음 움직인 것이 아니게 됨
+        this.pawnNeverMove = false;
+        this.kingNeverMove = false;
+        this.rookNeverMove = false;
+    }
 
     // References for all the sptrites that the chesspiece can be
     public GameObject black_queenP, black_knightP, black_bishopP, black_kingP, black_rookP, black_pawnP;
@@ -48,6 +73,19 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         white_king = white_kingP.GetComponent<SpriteRenderer>().sprite;
         white_rook = white_rookP.GetComponent<SpriteRenderer>().sprite;
         white_pawn = white_pawnP.GetComponent<SpriteRenderer>().sprite;
+
+        controller = GameObject.FindGameObjectWithTag("GameController");
+        if (controller != null)
+        {
+            gameController = controller.GetComponent<MultiGame>();
+        }
+        else
+        {
+            // 만약 못찾으면 에러 메시지를 확실하게 남겨서 디버깅을 돕습니다.
+            Debug.LogError("!!!!!!!! GameController 오브젝트를 찾을 수 없습니다! Tag가 정확한지 확인하세요. !!!!!!!!");
+        }
+
+        // ... 기존의 다른 Awake() 코드 (스프라이트 로드 등)가 있었다면 그대로 둡니다 ...
 
     }
 
@@ -81,17 +119,20 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
     public void SetCoords()
     {
-        float x = xBoard;
-        float y = yBoard;
+        var game = GameObject.FindGameObjectWithTag("GameController")
+                             .GetComponent<MultiGame>();
 
-        x *= 0.66f;
-        y *= 0.66f;
+        float t = game.tileSize;
+        Vector2 origin = game.boardOrigin;
 
-        x += -2.3f;
-        y += -2.3f;
+        float worldX = origin.x + xBoard * t;
+        float worldY = origin.y + yBoard * t;
 
-        this.transform.position = new Vector3(x, y, -1.0f);
+        // z 값은 기존 변수를 유지하거나 -1로 고정
+        float z = transform.position.z;
+        transform.position = new Vector3(worldX, worldY, z);
     }
+
 
     public void DisableDoubleMove()
     {
@@ -130,16 +171,134 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         SetXBoard(x);
         SetYBoard(y);
         Activate();
+
+        // 모든 클라이언트에서 보드 배열에 등록
+        var game = GameObject.FindGameObjectWithTag("GameController")
+                             .GetComponent<MultiGame>();
+        game.SetPosition(this.gameObject);
+
+        // ▼▼▼ 렌더링 순서 설정 코드 추가 ▼▼▼
+        var sr = GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.sortingLayerName = "Pieces"; // "Pieces" 층에 그리도록 설정
+            sr.sortingOrder = 1; // 그냥 1로 두면 됩니다. sorting layer를 썼기 때문에 이미 pieces는 2층에 안착. 2층의 order 1이다.
+        }
+
+
+        // === 스케일 자동 조정 ===
+        if (sr != null && sr.sprite != null)
+        {
+            // sprite 원본 폭 (월드 단위) - bounds는 transform.localScale을 이미 반영함
+            float spriteWidth = sr.sprite.bounds.size.x;
+
+            // 가져온 tileSize 사용
+            float tile = game.tileSize-0.1f;
+
+            // 칸 크기에 대해 sprite가 차지할 비율(예: 0.8 => 칸의 80% 너비로 맞춤)
+            float fillRatio = 0.65f;
+
+            // 원하는 실제 폭 = tile * fillRatio
+            float desiredWorldWidth = tile * fillRatio;
+
+            // 현재 sprite.bounds.size.x 는 '원본 1.0 scale'에서의 폭이지만, 
+            // sr.sprite.bounds.size.x * transform.localScale.x = 현재 world 폭.
+            // 우리는 transform.localScale을 다시 설정할 것이므로 아래처럼 계산:
+            float originalSpriteWidth = sr.sprite.bounds.size.x; // units at scale=1
+
+            if (originalSpriteWidth > 0.0001f)
+            {
+                float scale = desiredWorldWidth / originalSpriteWidth;
+                transform.localScale = new Vector3(scale, scale, 1f);
+            }
+        }
+
+        // 최종적으로 보드 배열에 등록 및 coords 세팅
+        SetCoords();
+        var gameRef = GameObject.FindGameObjectWithTag("GameController").GetComponent<MultiGame>();
+        gameRef.SetPosition(this.gameObject);
+
+        // 정렬 레이어 지정 (안정성)
+        if (sr != null)
+        {
+            sr.sortingLayerName = "Pieces";
+            sr.sortingOrder = 2;
+        }
     }
 
+    // 2. MovePlate 파괴 함수 수정
     public void DestroyMovePlates()
     {
+        // 태그로 찾아서 간단하게 파괴
         GameObject[] movePlates = GameObject.FindGameObjectsWithTag("MovePlate");
         for (int i = 0; i < movePlates.Length; i++)
         {
             Destroy(movePlates[i]);
         }
     }
+
+    public void ExecuteMove(int targetX, int targetY, bool isAttack, bool isCastle)
+    {
+        // 내가 소유한 말이 아니더라도, 방장에게 '요청'은 보낼 수 있다.
+        // GameController에 있는 PhotonView를 가져온다.
+        var gameControllerPV = controller.GetComponent<PhotonView>();
+        if (gameControllerPV == null) return;
+
+        // 잡히는 말의 ViewID를 찾는다. 없으면 -1
+        int capturedID = -1;
+        if (isAttack)
+        {
+            GameObject capturedPiece = controller.GetComponent<MultiGame>().GetPosition(targetX, targetY);
+            if (capturedPiece != null)
+            {
+                capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
+            }
+        }
+
+        // 방장(MasterClient)에게 이동을 요청하는 RPC를 보낸다.
+        // 필요한 모든 정보를 파라미터로 넘겨준다.
+        gameControllerPV.RPC("RequestMovePiece", RpcTarget.MasterClient,
+            photonView.ViewID, targetX, targetY, capturedID, isCastle);
+
+        // 이동 후 생성되어 있던 모든 MovePlate를 즉시 제거한다.
+        DestroyMovePlates();
+    }
+
+
+
+    [PunRPC]
+    public void MoveTo(int targetX, int targetY)
+    {
+        // 1) 원래 위치 빈칸 처리
+        var game = GameObject.FindGameObjectWithTag("GameController")
+                             .GetComponent<MultiGame>();
+        game.SetPositionEmpty(xBoard, yBoard);
+
+        // 2) 좌표 갱신
+        xBoard = targetX;
+        yBoard = targetY;
+        SetCoords();
+
+        // 3) 보드 배열에 재등록
+        game.SetPosition(this.gameObject);
+    }
+
+
+    [PunRPC]
+    public void DestroySelf()
+    {
+        // 1) 모든 클라이언트에서 보드 배열 갱신
+        var game = GameObject.FindGameObjectWithTag("GameController")
+                             .GetComponent<MultiGame>();
+        game.SetPositionEmpty(xBoard, yBoard);
+
+        // 2) 오너만 파괴
+        if (photonView.IsMine)
+        {
+            PhotonNetwork.Destroy(this.gameObject);
+        }
+    }
+
 
     public void InitiateMovePlates()
     {
@@ -234,37 +393,49 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         PointMovePlate(xBoard - 1, yBoard + 1);
         PointMovePlate(xBoard - 1, yBoard - 1);
     }
+    // MultiChessMan.cs 의 CastleingMovePlate 함수
     public void CastleingMovePlate()
     {
-        MultiGame sc = controller.GetComponent<MultiGame>();
-
         if (!kingNeverMove) return;
 
-        // 왼쪽 캐슬링
-        if (sc.checkLeftSide(xBoard, yBoard)) CastlingPlateSpawn(xBoard - 2, yBoard);
-
-        // 오른쪽 캐슬링
-        if (sc.checkRightSide(xBoard, yBoard)) CastlingPlateSpawn(xBoard + 2, yBoard);
-
+        // gameController는 Awake에서 캐싱해 뒀다고 가정
+        if (gameController.CanCastle(xBoard, yBoard, true)) // 킹 사이드(오른쪽) 체크
+        {
+            CastlingPlateSpawn(xBoard + 2, yBoard);
+        }
+        if (gameController.CanCastle(xBoard, yBoard, false)) // 퀸 사이드(왼쪽) 체크
+        {
+            CastlingPlateSpawn(xBoard - 2, yBoard);
+        }
     }
 
 
+    // MultiChessMan.cs
+
     private void CastlingPlateSpawn(int targetX, int targetY)
     {
-        // 화면 좌표 변환
-        float x = targetX * 0.66f - 2.3f;
-        float y = targetY * 0.66f - 2.3f;
+        // gameController는 Awake()에서 캐싱해두었다고 가정합니다.
+        if (gameController == null)
+        {
+            Debug.LogError("Game Controller가 없어서 CastlingPlate를 생성할 수 없습니다.");
+            return;
+        }
 
-        // MovePlate 인스턴스화
-        object[] initData = new object[] { targetX, targetY };
-        GameObject mp = PhotonNetwork.Instantiate("MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity, 0, initData);
+        // 1. 하드코딩된 좌표 계산을 모두 삭제하고, 기본값으로 생성합니다.
+        GameObject mp = Instantiate(movePlate, Vector3.zero, Quaternion.identity);
 
-        var mpScript = mp.GetComponent<MultiMovePlate>();
+        // 2. 생성된 객체의 스크립트를 가져옵니다.
+        MultiMovePlate mpScript = mp.GetComponent<MultiMovePlate>();
+
+        // 3. 참조와 논리적 좌표를 설정합니다.
         mpScript.SetReference(gameObject);
         mpScript.SetCoords(targetX, targetY);
 
-        // 여기가 핵심: 이 플레이트가 캐슬링용임을 표시
+        // 4. ★★★ 이 플레이트가 캐슬링용임을 표시합니다. ★★★
         mpScript.isCastling = true;
+
+        // 5. 이제 모든 시각적 처리는 SetupVisuals 함수에게 맡깁니다.
+        mpScript.SetupVisuals(gameController, targetX, targetY);
     }
 
 
@@ -313,13 +484,14 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         for (int dx = -1; dx <= 1; dx += 2)
         {
             int diagX = x + dx;
-            int diagY = y;
+            int diagY = y;  
             if (sc.PositionOnBoard(diagX, diagY)
                 && sc.GetPosition(diagX, diagY) != null
                 && sc.GetPosition(diagX, diagY).GetComponent<MultiChessMan>().player != player)
             {
                 MovePlateAttackSpawn(diagX, diagY);
             }
+
         }
     }
 
@@ -327,52 +499,62 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     // 실제로 MovePlate 프리팹을 Instantiate 하는 두 메소드
     public void MovePlateSpawn(int matrixX, int matrixY)
     {
-        float x = matrixX;
-        float y = matrixY;
+        if (gameController == null)
+        {
+            // 만약을 대비한 방어 코드
+            Debug.LogError("Game Controller가 할당되지 않아 MovePlate를 생성할 수 없습니다.");
+            return;
+        }
 
-        x *= 0.66f;
-        y *= 0.66f;
+        // 1. 프리팹을 기본값으로 생성
+        GameObject mp = Instantiate(movePlate, Vector3.zero, Quaternion.identity);
 
-        x += -2.3f;
-        y += -2.3f;
-
-        object[] initData = new object[] { matrixX, matrixY };
-        GameObject mp = PhotonNetwork.Instantiate("MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity, 0, initData);
-
+        // 2. 생성된 객체의 스크립트를 가져옴
         MultiMovePlate mpScript = mp.GetComponent<MultiMovePlate>();
+
+        // 3. 참조와 좌표 설정
         mpScript.SetReference(gameObject);
         mpScript.SetCoords(matrixX, matrixY);
+
+        // 4. ★★★ 새로 만든 시각화 함수 호출 ★★★
+        // 게임 컨트롤러와 보드 좌표를 넘겨주면 알아서 위치/크기를 설정함
+        mpScript.SetupVisuals(gameController, matrixX, matrixY);
     }
+
+
+    // MultiChessMan.cs
 
     public void MovePlateAttackSpawn(int matrixX, int matrixY)
     {
-        float x = matrixX;
-        float y = matrixY;
+        if (gameController == null) return;
 
-        x *= 0.66f;
-        y *= 0.66f;
+        // 1. 프리팹 생성
+        GameObject mp = Instantiate(movePlate, Vector3.zero, Quaternion.identity);
 
-        x += -2.3f;
-        y += -2.3f;
-
-        object[] initData = new object[] { matrixX, matrixY };
-        GameObject mp = PhotonNetwork.Instantiate("MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity, 0, initData);
-        //GameObject mp = PhotonNetwork.Instantiate("MultiMovePlate", new Vector3(x, y, -3.0f), Quaternion.identity);
-
+        // 2. 스크립트 가져오기
         MultiMovePlate mpScript = mp.GetComponent<MultiMovePlate>();
+
+        // 3. ★★★ attack 플래그 설정 (가장 중요!) ★★★
         mpScript.attack = true;
+
+        // 4. 나머지 설정 및 시각화 함수 호출
         mpScript.SetReference(gameObject);
         mpScript.SetCoords(matrixX, matrixY);
+        mpScript.SetupVisuals(gameController, matrixX, matrixY);
     }
 
     private void OnMouseUp()
     {
+        var game = controller.GetComponent<MultiGame>();
+
         if (!controller.GetComponent<MultiGame>().IsGameOver() && controller.GetComponent<MultiGame>().GetCurrentPlayer() == player 
             && controller.GetComponent<MultiGame>().GetCurrentPlayer() == controller.GetComponent<MultiGame>().GetMyPlayerColor() )
         {
+
             DestroyMovePlates();
 
             InitiateMovePlates();
+
         }
     }
 

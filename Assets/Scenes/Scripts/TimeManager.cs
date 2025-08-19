@@ -16,13 +16,15 @@ public class TimeManager : MonoBehaviourPun
     public GameObject blackClockHand;
     public GameObject Clock;
 
-    public TextMeshProUGUI whiteText;
-    public TextMeshProUGUI blackText;
+   // public TextMeshProUGUI whiteText;
+   // public TextMeshProUGUI blackText;
 
     public bool isWhiteTurn = true;
 
     private Quaternion whiteStartRot;
     private Quaternion blackStartRot;
+
+    public MultiGame multiGame;
 
 
     void Start()
@@ -40,7 +42,12 @@ public class TimeManager : MonoBehaviourPun
     void Update()
     {
         // 마스터 클라이언트만 시간 계산
-       // if (!PhotonNetwork.IsMasterClient) return;
+        // if (!PhotonNetwork.IsMasterClient) return;
+
+
+        if (multiGame.GetCurrentPlayer() == "white")
+        { isWhiteTurn = true; }
+        else { isWhiteTurn = false; }
 
         if (isWhiteTurn && whiteRemainTime > 0f)
         {
@@ -57,11 +64,13 @@ public class TimeManager : MonoBehaviourPun
         // 예시: 시계 바늘 회전 (선택사항)
         UpdateClockHand();
 
-        whiteText.text = "White : " + whiteRemainTime;
-        blackText.text = "black : " + blackRemainTime;
+        //whiteText.text = "White : " + whiteRemainTime;
+       // blackText.text = "black : " + blackRemainTime;
 
 
         photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
+
+
     }
     public void RequestChangeTurn()
     {
@@ -77,6 +86,8 @@ public class TimeManager : MonoBehaviourPun
         // 턴 변경 후 시간도 동기화
         photonView.RPC("SyncTime", RpcTarget.All, whiteRemainTime, blackRemainTime, isWhiteTurn);
     }
+
+
     [PunRPC]
     public void SyncTime(float whiteTime, float blackTime, bool whiteTurn)
     {

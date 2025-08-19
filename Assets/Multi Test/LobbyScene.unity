@@ -1359,7 +1359,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   audioSource: {fileID: 240084379}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 8300000, guid: 3e4a708753f539c458b4baed6adcd527, type: 3}
+  clickSound: {fileID: 8300000, guid: bec72faa774cdd0438c81029d2ae192d, type: 3}
 --- !u!114 &240084381
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4317,7 +4317,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   audioSource: {fileID: 1020245485}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 8300000, guid: 3e4a708753f539c458b4baed6adcd527, type: 3}
+  clickSound: {fileID: 8300000, guid: bec72faa774cdd0438c81029d2ae192d, type: 3}
 --- !u!114 &1020245487
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5319,7 +5319,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   audioSource: {fileID: 1452023758}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 8300000, guid: 3e4a708753f539c458b4baed6adcd527, type: 3}
+  clickSound: {fileID: 8300000, guid: bec72faa774cdd0438c81029d2ae192d, type: 3}
 --- !u!114 &1452023760
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6013,7 +6013,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   audioSource: {fileID: 1585818855}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 8300000, guid: 3e4a708753f539c458b4baed6adcd527, type: 3}
+  clickSound: {fileID: 8300000, guid: bec72faa774cdd0438c81029d2ae192d, type: 3}
 --- !u!114 &1585818857
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6432,7 +6432,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   audioSource: {fileID: 1629836475}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 8300000, guid: 3e4a708753f539c458b4baed6adcd527, type: 3}
+  clickSound: {fileID: 8300000, guid: bec72faa774cdd0438c81029d2ae192d, type: 3}
 --- !u!114 &1629836477
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7068,9 +7068,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6678f729d4aca4749b61f4f1cd47ed6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  audioSource: {fileID: 0}
+  audioSource: {fileID: 1776772166}
   hoverSound: {fileID: 0}
-  clickSound: {fileID: 0}
+  clickSound: {fileID: 8300000, guid: bec72faa774cdd0438c81029d2ae192d, type: 3}
 --- !u!114 &1776772168
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7083,7 +7083,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d23dfd3e785cdc944ae54d5d89e91da0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  highlightPanel: {fileID: 0}
+  highlightPanel: {fileID: 1118521822}
 --- !u!1 &1806893537
 GameObject:
   m_ObjectHideFlags: 0

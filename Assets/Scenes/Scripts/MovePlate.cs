@@ -87,12 +87,24 @@ public class MovePlate : MonoBehaviour
         kingCm.DestroyMovePlates();
         reference.GetComponent<Chessman>().DisableCastling();
     }
-
-    public void Promotion()
+    /*
+    private void Promotion()
     {
+        Chessman pawnCm = reference.GetComponent<Chessman>();
 
+        // deprecated: FindObjectOfType<PromotionManager>()
+        var promoMgr =
+            Object.FindFirstObjectByType<PromotionManager>();
+        // 또는: Object.FindAnyObjectByType<PromotionManager>();
+
+        if (promoMgr != null)
+            promoMgr.ShowPromotionUI(pawnCm);
+        else
+            Debug.LogError("PromotionManager가 씬에 없습니다!");
+
+        Destroy(gameObject);
     }
-
+    */
     public void NormalMove()
     {
 
@@ -116,10 +128,10 @@ public class MovePlate : MonoBehaviour
         {
             reference.GetComponent<Chessman>().DisableDoubleMove();
 
-            int promotionY = reference.GetComponent<Chessman>().GetPlayer() == "white" ? 7 : 0;
+            int promotionY = reference.GetComponent<Chessman>().GetPlayer() == "white" ? 2 : 0;
             if (matrixY == promotionY)
             {
-                Promotion();  // 프로모션
+
                 return; // 턴 넘기지 않고 종료할 수도 있음
             }
         }
@@ -146,7 +158,7 @@ public class MovePlate : MonoBehaviour
         reference = obj;
     }
 
-
+  
 
     //위 두 메소드는 moveplate를 생성할 때 자주 사용하게 됩니다.
 

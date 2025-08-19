@@ -44,5 +44,14 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Board
+    uniqueID: 2926279301
+    locked: 0
+  - name: Pieces
+    uniqueID: 2329416665
+    locked: 0
+  - name: MovePlates
+    uniqueID: 2733416527
+    locked: 0
   m_RenderingLayers:
   - Default
