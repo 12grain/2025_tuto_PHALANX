@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Multi Test/LobbyScene.unity
+    guid: befcb326ede1c6e43b759bbd9550b290
+  - enabled: 1
     path: Assets/Scenes/Title.unity
     guid: 007aae72dc422a44092a2a7901200d64
   - enabled: 1
@@ -14,6 +17,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Game.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
+  - enabled: 1
+    path: Assets/Multi Test/MultiTestGameScene.unity
+    guid: 52db183f0ed4c764baf25d7778865e48
+  - enabled: 1
+    path: Assets/Multi Test/StartScene.unity
+    guid: 4b4d706157bdfb94c858b8b6e5f3409c
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

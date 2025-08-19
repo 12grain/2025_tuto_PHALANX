@@ -41,6 +41,7 @@ public class StartGameButton : MonoBehaviour
         }
 
         // ✅ 씬 전환
-        SceneManager.LoadScene("MainMenu");
+        // SceneManager.LoadScene("MainMenu");
+        SceneManager.LoadScene("LobbyScene");
     }
 }

@@ -11,6 +11,7 @@ using UnityEngine.UIElements;
 public class MultiGame : MonoBehaviourPunCallbacks
 {
     public GameObject chesspiece;
+    public TimeManager timeManager;
 
     // Positions and team for each chesspiece
     private GameObject[,] positions = new GameObject[8, 8];
@@ -141,7 +142,9 @@ public class MultiGame : MonoBehaviourPunCallbacks
         {
             currentPlayer = "white";
         }
-      
+       
+
+
     }
 
  
@@ -152,7 +155,9 @@ public class MultiGame : MonoBehaviourPunCallbacks
         if (PhotonNetwork.IsMasterClient)
         {
             photonView.RPC("NextTurn", RpcTarget.AllBuffered);
+          
         }
+        timeManager.ChangeTimeOwner();
     }
 
     public void DestroyMovePlates()
