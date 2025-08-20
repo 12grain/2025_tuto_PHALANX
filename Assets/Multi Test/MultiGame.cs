@@ -118,14 +118,36 @@ public class MultiGame : MonoBehaviourPunCallbacks
         Debug.Log($"Recalc: boardW={boardWorldWidth}, tileSize={tileSize}, boardOrigin={boardOrigin}");
     }
 
+    // MultiGame.cs
+
     public GameObject Create(string name, int x, int y)
     {
-        Vector3 spawnPos = new Vector3(0f, 0f, 0);
-        GameObject obj = PhotonNetwork.Instantiate("Pieces/MultiChesspiece", spawnPos, Quaternion.identity);
-        var sr = obj.GetComponent<SpriteRenderer>();
+        // 1. 요청받은 이름("white_CHEVALIER")에서 순수 기물 타입("CHEVALIER")을 추출합니다.
+        string pieceType = name.Split('_')[1];
+        string prefabToInstantiate;
 
+        // 2. 기물 타입이 '합성 기물' 중 하나인지 확인합니다.
+        if (pieceType == "PHALANX" || pieceType == "TESTUDO" || pieceType == "CHEVALIER" || pieceType == "BASTION")
+        {
+            // 2-1. 합성 기물이라면, 요청받은 이름 그대로의 프리팹을 사용합니다.
+            // 예: "white_CHEVALIER" -> "white_CHEVALIER.prefab"
+            prefabToInstantiate = name;
+        }
+        else
+        {
+            // 2-2. 그 외의 모든 일반 기물(rook, pawn 등)이라면, 기존의 기본 프리팹을 사용합니다.
+            prefabToInstantiate = "MultiChesspiece";
+        }
+
+        // 3. 결정된 프리팹 이름으로 경로를 만들고, 올바른 프리팹을 생성합니다.
+        string prefabPath = "Pieces/" + prefabToInstantiate;
+        Vector3 spawnPos = new Vector3(0f, 0f, 0);
+        GameObject obj = PhotonNetwork.Instantiate(prefabPath, spawnPos, Quaternion.identity);
+
+        // 4. 생성된 객체의 세부 설정을 위해 RPC를 호출합니다. (이 부분은 동일)
         PhotonView pv = obj.GetComponent<PhotonView>();
         pv.RPC("SetupSprite", RpcTarget.AllBuffered, name, x, y);
+
         return obj;
     }
 
@@ -417,6 +439,68 @@ public class MultiGame : MonoBehaviourPunCallbacks
     {
         this.isInteractionBlocked = isBlocked;
     }
+
+    // MultiGame.cs 에 추가
+
+    // 두 기물 이름을 받아 합성 결과를 반환하는 '레시피 북' 함수
+    public string GetFusionResultType(string piece1Name, string piece2Name)
+    {
+        // 이름에서 색깔 부분("white_", "black_")을 제거해서 순수 기물 타입만 비교
+        string type1 = piece1Name.Split('_')[1];
+        string type2 = piece2Name.Split('_')[1];
+
+        // 팔랑크스 (폰 + 폰)
+        if ((type1 == "pawn" && type2 == "pawn")) return "PHALANX";
+
+        // 테스투도 (폰 + 비숍)
+        if ((type1 == "pawn" && type2 == "bishop") || (type1 == "bishop" && type2 == "pawn")) return "TESTUDO";
+
+        // 슈발리에 (폰 + 나이트)
+        if ((type1 == "pawn" && type2 == "knight") || (type1 == "knight" && type2 == "pawn")) return "CHEVALIER";
+
+        // 바스티온 (폰 + 룩)
+        if ((type1 == "pawn" && type2 == "rook") || (type1 == "rook" && type2 == "pawn")) return "BASTION";
+
+        // 합성 불가능한 조합이면 null 반환
+        return null;
+    }
+
+    // MultiGame.cs 에 추가
+    [PunRPC]
+    public void RequestFusion(int movingPieceID, int stationaryPieceID)
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        GameObject movingPiece = PhotonView.Find(movingPieceID)?.gameObject;
+        GameObject stationaryPiece = PhotonView.Find(stationaryPieceID)?.gameObject;
+
+        if (movingPiece == null || stationaryPiece == null) return;
+
+        // 1. 합성될 기물들의 정보 가져오기
+        MultiChessMan movingCm = movingPiece.GetComponent<MultiChessMan>();
+        MultiChessMan stationaryCm = stationaryPiece.GetComponent<MultiChessMan>();
+        int targetX = stationaryCm.GetXBoard();
+        int targetY = stationaryCm.GetYBoard();
+        string playerColor = movingCm.GetPlayer();
+
+        // 2. 합성 결과물 이름 정하기
+        string resultType = GetFusionResultType(movingPiece.name, stationaryPiece.name);
+        string newPieceName = playerColor + "_" + resultType;
+
+        // 3. 기존 두 기물 보드에서 제거 및 네트워크 파괴
+        SetPositionEmpty(movingCm.GetXBoard(), movingCm.GetYBoard());
+        SetPositionEmpty(stationaryCm.GetXBoard(), stationaryCm.GetYBoard());
+        PhotonNetwork.Destroy(movingPiece);
+        PhotonNetwork.Destroy(stationaryPiece);
+
+        // 4. 새로운 합성 기물 생성
+        Create(newPieceName, targetX, targetY);
+
+        // 5. 턴 넘기기
+        CallNextTurn();
+    }
+
+
 
     //Update() 유니티에서 제공하는 유니티 이벤트 메소드로 프레임이 재생될때마다 호출되는 메소드 입니다
     //gameOver가 true이고 마우스 좌클릭 상태일때 게임을 재시작합니다.

@@ -61,9 +61,13 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     // References for all the sptrites that the chesspiece can be
     public GameObject black_queenP, black_knightP, black_bishopP, black_kingP, black_rookP, black_pawnP;
     public GameObject white_queenP, white_knightP, white_bishopP, white_kingP, white_rookP, white_pawnP;
+    public GameObject white_PHALANX_P, white_TESTUDO_P, white_CHEVALIER_P, white_BASTION_P;
+    public GameObject black_PHALANX_P, black_TESTUDO_P, black_CHEVALIER_P, black_BASTION_P;
 
     public Sprite black_queen, black_knight, black_bishop, black_king, black_rook, black_pawn;
     public Sprite white_queen, white_knight, white_bishop, white_king, white_rook, white_pawn;
+    public Sprite white_PHALANX, white_TESTUDO, white_CHEVALIER, white_BASTION;
+    public Sprite black_PHALANX, black_TESTUDO, black_CHEVALIER, black_BASTION;
 
     void Awake() 
     {
@@ -80,6 +84,17 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         white_king = white_kingP.GetComponent<SpriteRenderer>().sprite;
         white_rook = white_rookP.GetComponent<SpriteRenderer>().sprite;
         white_pawn = white_pawnP.GetComponent<SpriteRenderer>().sprite;
+
+        // ▼▼▼ 여기에 새로운 스프라이트 로드 코드 추가 ▼▼▼
+        white_PHALANX = white_PHALANX_P.GetComponent<SpriteRenderer>().sprite;
+        white_TESTUDO = white_TESTUDO_P.GetComponent<SpriteRenderer>().sprite;
+        white_CHEVALIER = white_CHEVALIER_P.GetComponent<SpriteRenderer>().sprite;
+        white_BASTION = white_BASTION_P.GetComponent<SpriteRenderer>().sprite;
+
+        black_PHALANX = black_PHALANX_P.GetComponent<SpriteRenderer>().sprite;
+        black_TESTUDO = black_TESTUDO_P.GetComponent<SpriteRenderer>().sprite;
+        black_CHEVALIER = black_CHEVALIER_P.GetComponent<SpriteRenderer>().sprite;
+        black_BASTION = black_BASTION_P.GetComponent<SpriteRenderer>().sprite;
 
         controller = GameObject.FindGameObjectWithTag("GameController");
         if (controller != null)
@@ -114,6 +129,10 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             case "black_king": this.GetComponent<SpriteRenderer>().sprite = black_king; player = "black"; break;
             case "black_rook": this.GetComponent<SpriteRenderer>().sprite = black_rook; player = "black"; break;
             case "black_pawn": this.GetComponent<SpriteRenderer>().sprite = black_pawn; player = "black"; break;
+            case "black_PHALANX": this.GetComponent<SpriteRenderer>().sprite = black_PHALANX; player = "black"; break;
+            case "black_TESTUDO": this.GetComponent<SpriteRenderer>().sprite = black_TESTUDO; player = "black"; break;
+            case "black_CHEVALIER": this.GetComponent<SpriteRenderer>().sprite = black_CHEVALIER; player = "black"; break;
+            case "black_BASTION": this.GetComponent<SpriteRenderer>().sprite = black_BASTION; player = "black"; break;
 
             case "white_queen": this.GetComponent<SpriteRenderer>().sprite = white_queen; player = "white"; break;
             case "white_knight": this.GetComponent<SpriteRenderer>().sprite = white_knight; player = "white"; break;
@@ -121,6 +140,11 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             case "white_king": this.GetComponent<SpriteRenderer>().sprite = white_king; player = "white"; break;
             case "white_rook": this.GetComponent<SpriteRenderer>().sprite = white_rook; player = "white"; break;
             case "white_pawn": this.GetComponent<SpriteRenderer>().sprite = white_pawn; player = "white"; break;
+            case "white_PHALANX": this.GetComponent<SpriteRenderer>().sprite = white_PHALANX; player = "white"; break;
+            case "white_TESTUDO": this.GetComponent<SpriteRenderer>().sprite = white_TESTUDO; player = "white"; break;
+            case "white_CHEVALIER": this.GetComponent<SpriteRenderer>().sprite = white_CHEVALIER; player = "white"; break;
+            case "white_BASTION": this.GetComponent<SpriteRenderer>().sprite = white_BASTION; player = "white"; break;
+
         }
     }
 
@@ -248,46 +272,52 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
     // MultiChessMan.cs
 
-    public void ExecuteMove(int targetX, int targetY, bool isAttack, bool isCastle)
+    public void ExecuteMove(int targetX, int targetY, bool isAttack, bool isCastle, bool isFusion)
     {
-        // 1. Awake에서 캐싱해둔 gameController를 사용 (안전하고 효율적)
         if (gameController == null) return;
 
-        // 2. 프로모션 조건인지 정확하게 확인 (white는 7번, black은 0번 행)
-        bool isPromotion = (this.name.Contains("pawn") &&
-                           ((player == "white" && targetY == 2) || (player == "black" && targetY == 5)));
-
-        // 3. 프로모션이 '아닌' 모든 일반 이동/캐슬링의 경우
-        if (!isPromotion)
+        // 1. 합성(Fusion) 요청을 가장 먼저 처리
+        if (isFusion)
         {
-            // 잡히는 말이 있는지 확인
-            int capturedID = -1;
-            if (isAttack)
+            GameObject stationaryPiece = gameController.GetPosition(targetX, targetY);
+            if (stationaryPiece != null)
             {
-                GameObject capturedPiece = gameController.GetPosition(targetX, targetY);
-                if (capturedPiece != null) capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
+                int stationaryPieceID = stationaryPiece.GetComponent<PhotonView>().ViewID;
+                gameController.GetComponent<PhotonView>().RPC("RequestFusion", RpcTarget.MasterClient, photonView.ViewID, stationaryPieceID);
             }
-
-            // 방장에게 '일반 이동'을 요청하는 RPC를 보냄
-            gameController.GetComponent<PhotonView>().RPC("RequestMovePiece", RpcTarget.MasterClient,
-                photonView.ViewID, targetX, targetY, capturedID, isCastle);
         }
-        // 4. 프로모션인 '특별한' 경우
+        // ▼▼▼ "만약 합성이 아니라면" 이라는 'else if'로 묶어줍니다 ▼▼▼
         else
         {
-            // 잡히는 말이 있는지 확인 (프로모션과 동시에 잡는 경우)
-            int capturedID = -1;
-            if (isAttack)
-            {
-                GameObject capturedPiece = gameController.GetPosition(targetX, targetY);
-                if (capturedPiece != null) capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
-            }
+            // 2. 프로모션 조건인지 정확하게 확인
+            bool isPromotion = (this.name.Contains("pawn") &&
+                               ((player == "white" && targetY == 7) || (player == "black" && targetY == 0)));
 
-            // 방장에게 RPC를 보내는 대신, 로컬의 PromotionManager UI를 직접 띄운다.
-            PromotionManager.Instance.ShowPromotionUI(this, targetX, targetY, isAttack, capturedID);
+            if (isPromotion)
+            {
+                // 3. 프로모션인 경우
+                int capturedID = -1;
+                if (isAttack)
+                {
+                    GameObject capturedPiece = gameController.GetPosition(targetX, targetY);
+                    if (capturedPiece != null) capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
+                }
+                PromotionManager.Instance.ShowPromotionUI(this, targetX, targetY, isAttack, capturedID);
+            }
+            else
+            {
+                // 4. 그 외 모든 일반 이동/캐슬링인 경우
+                int capturedID = -1;
+                if (isAttack)
+                {
+                    GameObject capturedPiece = gameController.GetPosition(targetX, targetY);
+                    if (capturedPiece != null) capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
+                }
+                gameController.GetComponent<PhotonView>().RPC("RequestMovePiece", RpcTarget.MasterClient,
+                    photonView.ViewID, targetX, targetY, capturedID, isCastle);
+            }
         }
 
-        // 5. 어떤 경우든, 이동을 시작했으니 MovePlate는 모두 제거
         DestroyMovePlates();
     }
 
@@ -389,6 +419,19 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             case "white_pawn":
                 PawnMovePlate(xBoard, yBoard + 1);
                 break;
+            // ▼▼▼ 새로운 기물들의 case 추가 ▼▼▼
+            case "white_PHALANX":
+            case "white_TESTUDO":
+            case "white_CHEVALIER":
+            case "white_BASTION":
+                PawnMovePlate(xBoard, yBoard + 1); // 백 폰처럼 움직임
+                break;
+            case "black_PHALANX":
+            case "black_TESTUDO":
+            case "black_CHEVALIER":
+            case "black_BASTION":
+                PawnMovePlate(xBoard, yBoard - 1); // 흑 폰처럼 움직임
+                break;
         }
     }
 
@@ -410,16 +453,23 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             y += yIncrement;
         }
 
-        // 2. 루프가 끝난 지점(장애물을 만난 지점)을 다시 한번 확인합니다.
         if (gameController.PositionOnBoard(x, y))
         {
-            // 3. 그곳에 있는 기물을 가져옵니다.
             GameObject targetPiece = gameController.GetPosition(x, y);
-
-            // 4. 기물이 존재하고, 그 기물이 내 편이 아닐 경우에만 공격 MovePlate를 생성합니다.
-            if (targetPiece != null && targetPiece.GetComponent<MultiChessMan>().player != this.player)
+            if (targetPiece != null)
             {
-                MovePlateAttackSpawn(x, y);
+                MultiChessMan targetCm = targetPiece.GetComponent<MultiChessMan>();
+                if (targetCm.player != this.player) // 적군이면 -> 공격
+                {
+                    MovePlateAttackSpawn(x, y);
+                }
+                else // 아군이면 -> 합성 체크
+                {
+                    if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
+                    {
+                        MovePlateFusionSpawn(x, y);
+                    }
+                }
             }
         }
     }
@@ -496,59 +546,93 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     // *** “PointMovePlate” : 단일 좌표 체크 → 빈 칸이면 MovePlate, 적이면 공격 MovePlate
     public void PointMovePlate(int x, int y)
     {
-        MultiGame sc = controller.GetComponent<MultiGame>();
-        if (sc.PositionOnBoard(x, y))
-        {
-            GameObject cp = sc.GetPosition(x, y);
+        if (gameController == null) return;
+        if (!gameController.PositionOnBoard(x, y)) return;
 
-            if (cp == null)
-            {
-                MovePlateSpawn(x, y);
-            }
-            else if (cp.GetComponent<MultiChessMan>().player != player)
+        GameObject targetPiece = gameController.GetPosition(x, y);
+
+        if (targetPiece == null) // 1. 칸이 비었으면 -> 일반 이동
+        {
+            MovePlateSpawn(x, y);
+        }
+        else // 2. 칸에 기물이 있으면
+        {
+            MultiChessMan targetCm = targetPiece.GetComponent<MultiChessMan>();
+            if (targetCm.player != this.player) // 2-1. 적군이면 -> 공격
             {
                 MovePlateAttackSpawn(x, y);
+            }
+            else // 2-2. 아군이면 -> 합성 체크
+            {
+                if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
+                {
+                    MovePlateFusionSpawn(x, y);
+                }
             }
         }
     }
 
+    // MultiChessMan.cs
+
     public void PawnMovePlate(int x, int y)
     {
-        MultiGame sc = controller.GetComponent<MultiGame>();
+        if (gameController == null) return;
 
-        int direction = (player == "white") ? 1 : -1;
-
-        // 1. 한 칸 전진
-        if (sc.PositionOnBoard(x, y) && sc.GetPosition(x, y) == null)
+        // 1. 한 칸 전진 (이동 또는 합성)
+        if (gameController.PositionOnBoard(x, y))
         {
-            MovePlateSpawn(x, y);
-
-            // 2. 두 칸 전진 (처음 움직이는 경우에만)
-            if (pawnNeverMove)
+            GameObject targetPiece = gameController.GetPosition(x, y);
+            if (targetPiece == null) // 1-1. 칸이 비었으면 -> 일반 이동
             {
-                int twoStepY = y + direction;
-                if (sc.PositionOnBoard(x, twoStepY) && sc.GetPosition(x, twoStepY) == null)
+                MovePlateSpawn(x, y);
+
+                // 1-2. 두 칸 전진 (처음 움직이는 경우에만)
+                if (pawnNeverMove)
                 {
-                    MovePlateSpawn(x, twoStepY);
+                    int direction = (player == "white") ? 1 : -1;
+                    int twoStepY = y + direction;
+                    if (gameController.PositionOnBoard(x, twoStepY) && gameController.GetPosition(x, twoStepY) == null)
+                    {
+                        MovePlateSpawn(x, twoStepY);
+                    }
+                }
+            }
+            else if (targetPiece.GetComponent<MultiChessMan>().player == this.player) // 1-3. 칸에 아군이 있으면 -> 합성 체크
+            {
+                if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
+                {
+                    MovePlateFusionSpawn(x, y);
                 }
             }
         }
 
-        // 3. 대각선 공격
+
+        // 2. 대각선 이동 (공격 또는 합성)
+        int attackDirectionY = (player == "white") ? yBoard + 1 : yBoard - 1;
         for (int dx = -1; dx <= 1; dx += 2)
         {
-            int diagX = x + dx;
-            int diagY = y;  
-            if (sc.PositionOnBoard(diagX, diagY)
-                && sc.GetPosition(diagX, diagY) != null
-                && sc.GetPosition(diagX, diagY).GetComponent<MultiChessMan>().player != player)
-            {
-                MovePlateAttackSpawn(diagX, diagY);
-            }
+            int attackX = xBoard + dx;
 
+            if (gameController.PositionOnBoard(attackX, attackDirectionY))
+            {
+                GameObject targetPiece = gameController.GetPosition(attackX, attackDirectionY);
+                if (targetPiece != null) // 칸에 기물이 있으면
+                {
+                    if (targetPiece.GetComponent<MultiChessMan>().player != this.player) // 2-1. 적군이면 -> 공격
+                    {
+                        MovePlateAttackSpawn(attackX, attackDirectionY);
+                    }
+                    else // 2-2. 아군이면 -> 합성 체크
+                    {
+                        if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
+                        {
+                            MovePlateFusionSpawn(attackX, attackDirectionY);
+                        }
+                    }
+                }
+            }
         }
     }
-
 
     // 실제로 MovePlate 프리팹을 Instantiate 하는 두 메소드
     public void MovePlateSpawn(int matrixX, int matrixY)
@@ -576,7 +660,25 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     }
 
 
-    // MultiChessMan.cs
+
+
+    private void OnMouseUp()
+    {
+        var game = controller.GetComponent<MultiGame>();
+
+
+        // 이전에 Awake()에서 캐싱해둔 gameController 변수를 사용해야 합니다.
+        if (gameController == null) return;
+
+        // ▼▼▼ !gameController.isInteractionBlocked 조건을 이 if문에 추가합니다 ▼▼▼
+        if (!gameController.IsGameOver() && !gameController.isInteractionBlocked && gameController.GetCurrentPlayer() == player
+            && gameController.GetCurrentPlayer() == gameController.GetMyPlayerColor())
+        {
+            DestroyMovePlates();
+
+            InitiateMovePlates(); 
+        }
+    }
 
     public void MovePlateAttackSpawn(int matrixX, int matrixY)
     {
@@ -597,22 +699,21 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         mpScript.SetupVisuals(gameController, matrixX, matrixY);
     }
 
-    private void OnMouseUp()
+    // MultiChessMan.cs 에 추가
+    public void MovePlateFusionSpawn(int matrixX, int matrixY)
     {
-        var game = controller.GetComponent<MultiGame>();
-
-
-        // 이전에 Awake()에서 캐싱해둔 gameController 변수를 사용해야 합니다.
         if (gameController == null) return;
 
-        // ▼▼▼ !gameController.isInteractionBlocked 조건을 이 if문에 추가합니다 ▼▼▼
-        if (!gameController.IsGameOver() && !gameController.isInteractionBlocked && gameController.GetCurrentPlayer() == player
-            && gameController.GetCurrentPlayer() == gameController.GetMyPlayerColor())
-        {
-            DestroyMovePlates();
+        GameObject mp = Instantiate(movePlate, Vector3.zero, Quaternion.identity);
+        MultiMovePlate mpScript = mp.GetComponent<MultiMovePlate>();
 
-            InitiateMovePlates(); 
-        }
+        mpScript.isFusion = true; // 이 플레이트는 합성용이라고 표시
+        mpScript.attack = false;  // 공격은 아님
+        mpScript.SetReference(gameObject);
+        mpScript.SetCoords(matrixX, matrixY);
+        mpScript.SetupVisuals(gameController, matrixX, matrixY);
+
+        
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -651,6 +752,13 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
         // 애니메이션이 끝난 후 정확한 위치에 고정
         transform.position = targetPosition;
+    }
+
+    // MultiChessMan.cs 에 추가
+
+    void OnMouseDown()
+    {
+        Debug.Log("<color=red>CHESS PIECE가 클릭되었습니다!</color> 이름: " + this.gameObject.name);
     }
 
     // 2. 나이트 이동 애니메이션 (홉/점프)

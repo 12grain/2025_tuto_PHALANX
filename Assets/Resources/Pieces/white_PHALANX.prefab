@@ -11,10 +11,10 @@ GameObject:
   - component: {fileID: 1577461750360654435}
   - component: {fileID: 4850148176657040109}
   - component: {fileID: 4417911520186444561}
-  - component: {fileID: 1395012767510863257}
   - component: {fileID: 935955441832729926}
+  - component: {fileID: -2982291213716021615}
   m_Layer: 0
-  m_Name: MultiChesspiece
+  m_Name: white_PHALANX
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -79,7 +79,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -3439709500497429360, guid: 14789ea864a7b5e4c97459f3fed44397, type: 3}
+  m_Sprite: {fileID: 2737112841095021676, guid: 040c98cc309d8914497e05e7e70eb93c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -120,7 +120,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -128,7 +128,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 0.68, y: 1.04}
+    oldSize: {x: 1.04, y: 1.04}
     newSize: {x: 0.13, y: 0.16}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -136,7 +136,30 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
---- !u!114 &1395012767510863257
+--- !u!114 &935955441832729926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1859702523106945436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ObservedComponentsFoldoutOpen: 1
+  Group: 0
+  prefixField: -1
+  Synchronization: 3
+  OwnershipTransfer: 0
+  observableSearch: 2
+  ObservedComponents:
+  - {fileID: -2982291213716021615}
+  sceneViewId: 0
+  InstantiationId: 0
+  isRuntimeInstantiated: 0
+--- !u!114 &-2982291213716021615
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -164,7 +187,7 @@ MonoBehaviour:
   white_kingP: {fileID: 7651887421977685848, guid: 3fe7baaa539f70e4eb5097c04164dded, type: 3}
   white_rookP: {fileID: 5858852469831328582, guid: 6b4af29ec458f7643889e7bf68487872, type: 3}
   white_pawnP: {fileID: 8445592998277578410, guid: 678ca49fa2abce344b6eec26adb1f2db, type: 3}
-  white_PHALANX_P: {fileID: 1859702523106945436, guid: f6662a9d4a8ad5040a6defd5fceed787, type: 3}
+  white_PHALANX_P: {fileID: 1859702523106945436}
   white_TESTUDO_P: {fileID: 1859702523106945436, guid: 164685854c835af439d90eca7adbafc9, type: 3}
   white_CHEVALIER_P: {fileID: 1859702523106945436, guid: eac104dc9e4b01947aa0db25d75e0b0d, type: 3}
   white_BASTION_P: {fileID: 1859702523106945436, guid: 8867daf754c230b41b12cdcdfd7121f4, type: 3}
@@ -192,26 +215,3 @@ MonoBehaviour:
   black_TESTUDO: {fileID: 0}
   black_CHEVALIER: {fileID: 0}
   black_BASTION: {fileID: 0}
---- !u!114 &935955441832729926
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1859702523106945436}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ObservedComponentsFoldoutOpen: 1
-  Group: 0
-  prefixField: -1
-  Synchronization: 3
-  OwnershipTransfer: 0
-  observableSearch: 2
-  ObservedComponents:
-  - {fileID: 1395012767510863257}
-  sceneViewId: 0
-  InstantiationId: 0
-  isRuntimeInstantiated: 0

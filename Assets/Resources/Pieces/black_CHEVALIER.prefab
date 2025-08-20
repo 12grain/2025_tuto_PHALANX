@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1395012767510863257}
   - component: {fileID: 935955441832729926}
   m_Layer: 0
-  m_Name: MultiChesspiece
+  m_Name: black_CHEVALIER
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -79,7 +79,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -3439709500497429360, guid: 14789ea864a7b5e4c97459f3fed44397, type: 3}
+  m_Sprite: {fileID: 9199419612787672611, guid: 2b59aaf81669168459b9024edd2ca357, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -120,7 +120,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -128,7 +128,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 0.68, y: 1.04}
+    oldSize: {x: 0.66, y: 0.96}
     newSize: {x: 0.13, y: 0.16}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -170,7 +170,7 @@ MonoBehaviour:
   white_BASTION_P: {fileID: 1859702523106945436, guid: 8867daf754c230b41b12cdcdfd7121f4, type: 3}
   black_PHALANX_P: {fileID: 1859702523106945436, guid: d7d0c251535678a4487c8e500d4e63c0, type: 3}
   black_TESTUDO_P: {fileID: 1859702523106945436, guid: 86f0d134d8589de49ad60ab1c2dd5f80, type: 3}
-  black_CHEVALIER_P: {fileID: 1859702523106945436, guid: fd75304e2d348964e8ad274dac887f10, type: 3}
+  black_CHEVALIER_P: {fileID: 1859702523106945436}
   black_BASTION_P: {fileID: 1859702523106945436, guid: c07e97ba06b656942b566b55759e3d9b, type: 3}
   black_queen: {fileID: -7779958110830305896, guid: a05dfc8da21b3f940a99e1cebc09ce52, type: 3}
   black_knight: {fileID: 0}
