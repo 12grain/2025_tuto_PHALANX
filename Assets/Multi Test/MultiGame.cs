@@ -232,41 +232,62 @@ public class MultiGame : MonoBehaviourPunCallbacks
         }
     }
 
+    // MultiGame.cs
+
+    // MultiGame.cs 의 RequestMovePiece 함수
     [PunRPC]
     public void RequestMovePiece(int attackerID, int targetX, int targetY, int capturedID, bool isCastle)
     {
-        // 방장이 아니면 아무것도 하지 않음 (보안)
         if (!PhotonNetwork.IsMasterClient) return;
 
-        // --- 여기에서 방장은 전달받은 정보로 이동이 유효한지 검증할 수 있습니다 ---
-        // 예: 턴이 맞는지, 규칙에 맞는지 등 (지금은 생략)
-        // ---------------------------------------------------------------------
+        PhotonView attackerView = PhotonView.Find(attackerID);
+        if (attackerView == null) return;
+        MultiChessMan attackerCm = attackerView.GetComponent<MultiChessMan>();
 
-        // 캐슬링 요청일 경우
+        // ▼▼▼ 주둔 해제 로직을 여기서 먼저 처리합니다 ▼▼▼
+        bool wasGarrisoned = attackerCm.IsGarrisoned();
+        int bastionToReleaseID = -1;
+
+        if (wasGarrisoned)
+        {
+            bastionToReleaseID = attackerCm.GetGarrisonedBastionID();
+            PhotonView bastionView = PhotonView.Find(bastionToReleaseID);
+
+            if (bastionView != null)
+            {
+                bastionView.RPC("RPC_SetVisible", RpcTarget.All, true);
+            }
+
+            attackerView.RPC("RPC_SetGarrisonStatus", RpcTarget.All, false, -1);
+        }
+
+        // --- 일반 이동/캐슬링 처리 ---
         if (isCastle)
         {
-            // 캐슬링 실행 RPC를 모든 클라이언트에게 보냄
             photonView.RPC("RPC_ExecuteCastling", RpcTarget.All, attackerID, targetX);
         }
-        else // 일반 이동/공격 요청일 경우
+        else
         {
             if (capturedID != -1)
             {
                 PhotonView.Find(capturedID)?.RPC("DestroySelf", RpcTarget.AllBuffered);
             }
-            // ▼▼▼ 여기에 세 번째 파라미터로 '공격 여부'를 전달합니다 ▼▼▼
-            // capturedID가 -1이 아니면 true (공격), 맞으면 false (일반 이동)
+
             bool isCapture = (capturedID != -1);
-            PhotonView.Find(attackerID)?.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, isCapture);
+            attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, isCapture);
         }
 
-        // ▼▼▼ 말의 첫 이동 상태를 업데이트하는 RPC 호출 ▼▼▼
-        PhotonView.Find(attackerID)?.RPC("RPC_UpdateMovedStatus", RpcTarget.All);
+        // ▼▼▼ 주둔 해제 후속 처리 ▼▼▼
+        // 만약 기물이 바스티온에서 떠난 것이었다면,
+        if (wasGarrisoned && bastionToReleaseID != -1)
+        {
+            // 모든 클라이언트에게 "그 자리에 바스티온을 다시 놓아라"고 명령
+            photonView.RPC("RPC_PlacePieceOnBoard", RpcTarget.All, bastionToReleaseID);
+        }
 
-        // 4. 모든 처리가 끝났으므로, 다음 턴으로 넘김
+        attackerView.RPC("RPC_UpdateMovedStatus", RpcTarget.All);
         CallNextTurn();
     }
-
     // 캐슬링 가능 여부를 확인하는 상세 함수
     public bool CanCastle(int kingX, int kingY, bool isKingSide)
     {
@@ -440,6 +461,35 @@ public class MultiGame : MonoBehaviourPunCallbacks
         this.isInteractionBlocked = isBlocked;
     }
 
+    // MultiGame.cs 의 RequestEnterBastion 함수를 이 코드로 교체
+    [PunRPC]
+    public void RequestEnterBastion(int movingPieceID, int bastionID)
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        PhotonView movingPieceView = PhotonView.Find(movingPieceID);
+        PhotonView bastionView = PhotonView.Find(bastionID);
+
+        if (movingPieceView == null || bastionView == null) return;
+
+        // 1. 바스티온의 위치 정보를 가져옴
+        int targetX = bastionView.GetComponent<MultiChessMan>().GetXBoard();
+        int targetY = bastionView.GetComponent<MultiChessMan>().GetYBoard();
+
+        // 2. 바스티온을 보이지 않게 하고, 주둔한 기물 ID를 기억하라고 명령
+        bastionView.RPC("RPC_SetVisible", RpcTarget.All, false);
+        // (필요하다면, 바스티온의 isOccupied 같은 상태도 여기서 RPC로 업데이트 가능)
+
+        // 3. 진입한 기물에게 '주둔 상태'가 되었음을 알림 (어떤 바스티온에 들어갔는지 ID 포함)
+        movingPieceView.RPC("RPC_SetGarrisonStatus", RpcTarget.All, true, bastionID);
+
+        // 4. 진입한 기물을 애니메이션과 함께 바스티온의 위치로 이동시킴
+        movingPieceView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, false);
+
+        // 5. 턴을 넘김
+        CallNextTurn();
+    }
+
     // MultiGame.cs 에 추가
 
     // 두 기물 이름을 받아 합성 결과를 반환하는 '레시피 북' 함수
@@ -499,6 +549,19 @@ public class MultiGame : MonoBehaviourPunCallbacks
         // 5. 턴 넘기기
         CallNextTurn();
     }
+
+
+    // MultiGame.cs 에 새로 추가
+    [PunRPC]
+    public void RPC_PlacePieceOnBoard(int viewID)
+    {
+        PhotonView pieceView = PhotonView.Find(viewID);
+        if (pieceView != null)
+        {
+            SetPosition(pieceView.gameObject);
+        }
+    }
+
 
 
 
