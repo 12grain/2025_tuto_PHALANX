@@ -1,4 +1,5 @@
 using Photon.Pun;
+using Photon.Pun.Demo.Asteroids;
 using Photon.Pun.Demo.PunBasics;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class MultiGame : MonoBehaviourPunCallbacks
 {
@@ -31,12 +33,13 @@ public class MultiGame : MonoBehaviourPunCallbacks
     public float boardWorldWidth = 0f;
     public float boardWorldHeight = 0f;
 
-    //private bool turnChanged = false;
-   // public TimeManager timeManager; // 시간 관리 해주는 소스 코드 
+
 
     void Awake()
     {
-        myPlayerColor = PlayerPrefs.GetString("MyColor"); 
+
+   
+        myPlayerColor = PlayerColorManager.instance.GetMyToggle() ? "white" : "black";
         Debug.Log("내 플레이어 색은: " + myPlayerColor);
     }
 

@@ -50,7 +50,7 @@ namespace Photon.Pun.Demo.Asteroids
 
             cachedRoomList = new Dictionary<string, RoomInfo>();
             roomListEntries = new Dictionary<string, GameObject>();
-            
+
             PlayerNameInput.text = "Player " + Random.Range(1000, 10000);
         }
 
@@ -99,7 +99,7 @@ namespace Photon.Pun.Demo.Asteroids
         {
             string roomName = "Room " + Random.Range(1000, 10000);
 
-            RoomOptions options = new RoomOptions {MaxPlayers = 2};
+            RoomOptions options = new RoomOptions { MaxPlayers = 2 };
 
             PhotonNetwork.CreateRoom(roomName, options, null);
         }
@@ -127,7 +127,7 @@ namespace Photon.Pun.Demo.Asteroids
                 object isPlayerReady;
                 if (p.CustomProperties.TryGetValue(AsteroidsGame.PLAYER_READY, out isPlayerReady))
                 {
-                    entry.GetComponent<PlayerListEntry>().SetPlayerReady((bool) isPlayerReady);
+                    entry.GetComponent<PlayerListEntry>().SetPlayerReady((bool)isPlayerReady);
                 }
 
                 playerListEntries.Add(p.ActorNumber, entry);
@@ -135,18 +135,13 @@ namespace Photon.Pun.Demo.Asteroids
 
             StartGameButton.gameObject.SetActive(CheckPlayersReady());
 
-            /*
-            string myColor = PhotonNetwork.IsMasterClient ? "white" : "black"; //방장이면 흰색 참가자면 검은 색
-
-            PlayerPrefs.SetString("MyColor", myColor);
-            Debug.Log($"[색상 배정] 나는 {myColor} 입니다.");
-            */
+         
             Hashtable props = new Hashtable
             {
                 {AsteroidsGame.PLAYER_LOADED_LEVEL, false}
             };
             PhotonNetwork.LocalPlayer.SetCustomProperties(props);
-           
+
         }
 
         public override void OnLeftRoom()
@@ -249,14 +244,14 @@ namespace Photon.Pun.Demo.Asteroids
                         playerEntry.PlayerBlackWhiteToggle.onValueChanged.RemoveAllListeners();
 
                         playerEntry.PlayerBlackWhiteToggle.isOn = (myColor == "white");
-                        
+
 
                         // 🔁 리스너 다시 연결
-                        playerEntry.PlayerBlackWhiteToggle.onValueChanged.AddListener(playerEntry.OnColorToggleChanged);  
-                        
+                        playerEntry.PlayerBlackWhiteToggle.onValueChanged.AddListener(playerEntry.OnColorToggleChanged);
+
                         playerEntry.UpdateOtherToggleUIVisual(myColor);
                     }
-                  
+
                 }
 
             }
@@ -264,7 +259,7 @@ namespace Photon.Pun.Demo.Asteroids
 
         #endregion
 
-            #region UI CALLBACKS
+        #region UI CALLBACKS
 
         public void OnBackButtonClicked()
         {
@@ -285,7 +280,7 @@ namespace Photon.Pun.Demo.Asteroids
             //byte.TryParse(MaxPlayersInputField.text, out maxPlayers);
             //maxPlayers = (byte) Mathf.Clamp(maxPlayers, 2, 8);
 
-            RoomOptions options = new RoomOptions {MaxPlayers = maxPlayers, PlayerTtl = 10000 };
+            RoomOptions options = new RoomOptions { MaxPlayers = maxPlayers, PlayerTtl = 10000 };
 
             PhotonNetwork.CreateRoom(roomName, options, null);
         }
@@ -349,7 +344,7 @@ namespace Photon.Pun.Demo.Asteroids
                 object isPlayerReady;
                 if (p.CustomProperties.TryGetValue(AsteroidsGame.PLAYER_READY, out isPlayerReady))
                 {
-                    if (!(bool) isPlayerReady)
+                    if (!(bool)isPlayerReady)
                     {
                         return false;
                     }
@@ -362,7 +357,7 @@ namespace Photon.Pun.Demo.Asteroids
 
             return true;
         }
-        
+
         private void ClearRoomListView()
         {
             foreach (GameObject entry in roomListEntries.Values)
@@ -430,9 +425,9 @@ namespace Photon.Pun.Demo.Asteroids
         }
 
 
-        public void PopUpCreatRRoomPanel() 
+        public void PopUpCreatRRoomPanel()
         {
-            CreateRoomPanel.SetActive(true);        
+            CreateRoomPanel.SetActive(true);
         }
     }
 }

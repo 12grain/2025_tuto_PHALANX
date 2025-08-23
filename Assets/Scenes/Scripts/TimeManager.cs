@@ -16,6 +16,9 @@ public class TimeManager : MonoBehaviourPun
     public GameObject blackClockHand;
     public GameObject Clock;
 
+    public GameObject WinPanel;
+    public GameObject LosePanel;
+
    // public TextMeshProUGUI whiteText;
    // public TextMeshProUGUI blackText;
 
@@ -37,6 +40,9 @@ public class TimeManager : MonoBehaviourPun
 
         if (blackClockHand != null)
             blackStartRot = blackClockHand.transform.rotation;
+
+        WinPanel.SetActive(false);
+        LosePanel.SetActive(false);
     }
 
     void Update()
@@ -44,6 +50,32 @@ public class TimeManager : MonoBehaviourPun
         // 마스터 클라이언트만 시간 계산
         // if (!PhotonNetwork.IsMasterClient) return;
 
+        if (whiteRemainTime < 0f)
+        {
+            if (PlayerPrefs.GetString("MyColor") == "white")
+            {
+                LosePanel.SetActive(true);
+            }
+            else
+            {
+                WinPanel.SetActive(true);
+            }
+
+        }
+
+        if (blackRemainTime < 0f)
+        {
+            if (PlayerPrefs.GetString("MyColor") == "black")
+            {
+                LosePanel.SetActive(true);
+            }
+            else
+            {
+                WinPanel.SetActive(true);
+            }
+
+
+        }
 
         if (multiGame.GetCurrentPlayer() == "white")
         { isWhiteTurn = true; }
@@ -69,6 +101,7 @@ public class TimeManager : MonoBehaviourPun
 
 
         photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
+
 
 
     }

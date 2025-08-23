@@ -14,19 +14,21 @@ using UnityEngine.UI;
 using ExitGames.Client.Photon;
 using Photon.Realtime;
 using Photon.Pun.UtilityScripts;
+using TMPro;
 
 namespace Photon.Pun.Demo.Asteroids
 {
     public class PlayerListEntry : MonoBehaviour
     {
         [Header("UI References")]
-        public Text PlayerNameText;
+       // public Text PlayerNameText;
+        public TextMeshProUGUI PlayerNameTextPro;
 
-        public Image PlayerColorImage; 
+        public Image PlayerColorImage;
         public Toggle PlayerBlackWhiteToggle;
         public Button PlayerReadyButton;
         public Image PlayerReadyImage;
-       
+
 
         private int ownerId;
         private bool isPlayerReady;
@@ -40,6 +42,11 @@ namespace Photon.Pun.Demo.Asteroids
 
         public void Start()
         {
+            if (ownerId == PhotonNetwork.LocalPlayer.ActorNumber)
+            {
+                PlayerColorManager.instance.RegisterMyToggle(PlayerBlackWhiteToggle);
+            }
+
             if (PhotonNetwork.LocalPlayer.ActorNumber != ownerId)
             {
                 PlayerReadyButton.gameObject.SetActive(false);
@@ -50,27 +57,7 @@ namespace Photon.Pun.Demo.Asteroids
                 string initialColor = PlayerBlackWhiteToggle.isOn ? "white" : "black";
                 SetPlayerColor(initialColor);
 
-                /* Hashtable initialProps = new Hashtable() {{AsteroidsGame.PLAYER_READY, isPlayerReady}, {AsteroidsGame.PLAYER_LIVES, AsteroidsGame.PLAYER_MAX_LIVES}};
-                 PhotonNetwork.LocalPlayer.SetCustomProperties(initialProps);
-                 PhotonNetwork.LocalPlayer.SetScore(0);
-
-                 PlayerReadyButton.onClick.AddListener(() =>
-                 {
-                     isPlayerReady = !isPlayerReady;
-                     SetPlayerReady(isPlayerReady);
-
-                     Hashtable props = new Hashtable() {{AsteroidsGame.PLAYER_READY, isPlayerReady}};
-                     PhotonNetwork.LocalPlayer.SetCustomProperties(props);
-
-                     if (PhotonNetwork.IsMasterClient)
-                     {
-                         #if UNITY_6000_0_OR_NEWER
-                         FindFirstObjectByType<LobbyMainPanel>().LocalPlayerPropertiesUpdated();
-                         #else
-                         FindObjectOfType<LobbyMainPanel>().LocalPlayerPropertiesUpdated();
-                         #endif
-                     }
-                 });*/
+               
 
                 PlayerReadyButton.onClick.AddListener(() =>
                 {
@@ -92,20 +79,20 @@ namespace Photon.Pun.Demo.Asteroids
 
                 // Toggle 리스너 추가
                 PlayerBlackWhiteToggle.onValueChanged.AddListener(OnColorToggleChanged);
-            
 
-            // 초기 상태 동기화
-            Hashtable initialProps = new Hashtable
+
+                // 초기 상태 동기화
+                Hashtable initialProps = new Hashtable
             {
                 { AsteroidsGame.PLAYER_READY, isPlayerReady },
                 { AsteroidsGame.PLAYER_LIVES, AsteroidsGame.PLAYER_MAX_LIVES }
             };
-            PhotonNetwork.LocalPlayer.SetCustomProperties(initialProps);
-            PhotonNetwork.LocalPlayer.SetScore(0);
+                PhotonNetwork.LocalPlayer.SetCustomProperties(initialProps);
+                PhotonNetwork.LocalPlayer.SetScore(0);
             }
 
         }
-        
+
 
         public void OnDisable()
         {
@@ -117,7 +104,8 @@ namespace Photon.Pun.Demo.Asteroids
         public void Initialize(int playerId, string playerName)
         {
             ownerId = playerId;
-            PlayerNameText.text = playerName;
+            //PlayerNameText.text = playerName;
+            PlayerNameTextPro.text = playerName;    
         }
 
         private void OnPlayerNumberingChanged()
@@ -132,8 +120,11 @@ namespace Photon.Pun.Demo.Asteroids
         }
         public void SetPlayerReady(bool playerReady)
         {
-            PlayerReadyButton.GetComponentInChildren<Text>().text = playerReady ? "Ready!" : "Ready?";
+            PlayerReadyButton.GetComponentInChildren<TextMeshProUGUI>().text = playerReady ? "Ready!" : "Ready?";
             PlayerReadyImage.enabled = playerReady;
+            if (PlayerReadyButton.GetComponentInChildren<TextMeshProUGUI>().text.Contains("?")) {
+                PlayerReadyButton.OnDeselect(null);
+            }
         }
 
         public void OnColorToggleChanged(bool isOn)
