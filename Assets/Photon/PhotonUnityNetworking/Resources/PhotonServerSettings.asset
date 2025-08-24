@@ -63,6 +63,7 @@ MonoBehaviour:
   - ChangeTimeOwner
   - SyncTime
   - RPC_ChangeTimeOwner
+  - RpcEndGame
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

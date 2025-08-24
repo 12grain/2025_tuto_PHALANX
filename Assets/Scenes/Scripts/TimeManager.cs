@@ -26,8 +26,15 @@ public class TimeManager : MonoBehaviourPun
 
     private Quaternion whiteStartRot;
     private Quaternion blackStartRot;
-
+    private bool ended = false;  // ì¤‘ë³µ ì²˜ë¦¬ ë°©ì§€
+    
     public MultiGame multiGame;
+    private bool AmWhite()
+{
+    // MultiGameì´ ì •í•´ë‘” ê°’ì„ ê·¸ëŒ€ë¡œ ì‚¬ìš© (ë‹¨ì¼ ì¶œì²˜)
+    return multiGame != null && multiGame.GetMyPlayerColor() == "white";
+}
+
 
 
     void Start()
@@ -47,35 +54,33 @@ public class TimeManager : MonoBehaviourPun
 
     void Update()
     {
-        // ¸¶½ºÅÍ Å¬¶óÀÌ¾ğÆ®¸¸ ½Ã°£ °è»ê
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½
         // if (!PhotonNetwork.IsMasterClient) return;
-
-        if (whiteRemainTime < 0f)
-        {
-            if (PlayerPrefs.GetString("MyColor") == "white")
-            {
-                LosePanel.SetActive(true);
-            }
-            else
-            {
-                WinPanel.SetActive(true);
-            }
-
-        }
-
-        if (blackRemainTime < 0f)
-        {
-            if (PlayerPrefs.GetString("MyColor") == "black")
-            {
-                LosePanel.SetActive(true);
-            }
-            else
-            {
-                WinPanel.SetActive(true);
-            }
+        if (ended) return;
 
 
-        }
+        if (!ended && whiteRemainTime <= 0f)
+{
+    ended = true;
+    whiteRemainTime = 0f;
+
+    bool amWhite = AmWhite();       // ë°± ì‹œê°„ ì¢…ë£Œ â†’ ë°± íŒ¨ë°° / í‘ ìŠ¹ë¦¬
+    WinPanel.SetActive(!amWhite);
+    LosePanel.SetActive(amWhite);
+    return;
+}
+
+if (!ended && blackRemainTime <= 0f)
+{
+    ended = true;
+    blackRemainTime = 0f;
+
+    bool amWhite = AmWhite();       // í‘ ì‹œê°„ ì¢…ë£Œ â†’ í‘ íŒ¨ë°° / ë°± ìŠ¹ë¦¬
+    WinPanel.SetActive(amWhite);
+    LosePanel.SetActive(!amWhite);
+    return;
+}
+
 
         if (multiGame.GetCurrentPlayer() == "white")
         { isWhiteTurn = true; }
@@ -93,7 +98,7 @@ public class TimeManager : MonoBehaviourPun
         }
         
 
-        // ¿¹½Ã: ½Ã°è ¹Ù´Ã È¸Àü (¼±ÅÃ»çÇ×)
+        // ï¿½ï¿½ï¿½ï¿½: ï¿½Ã°ï¿½ ï¿½Ù´ï¿½ È¸ï¿½ï¿½ (ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½)
         UpdateClockHand();
 
         //whiteText.text = "White : " + whiteRemainTime;
@@ -113,10 +118,10 @@ public class TimeManager : MonoBehaviourPun
     [PunRPC]
     public void ChangeTimeOwner()
     {
-        //if (!PhotonNetwork.IsMasterClient) return; // ¸¶½ºÅÍ¸¸ º¯°æ °¡´É
+        //if (!PhotonNetwork.IsMasterClient) return; // ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         isWhiteTurn = !isWhiteTurn;
 
-        // ÅÏ º¯°æ ÈÄ ½Ã°£µµ µ¿±âÈ­
+        // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½È­
         photonView.RPC("SyncTime", RpcTarget.All, whiteRemainTime, blackRemainTime, isWhiteTurn);
     }
 
@@ -134,14 +139,14 @@ public class TimeManager : MonoBehaviourPun
         if (whiteClockHand != null)
         {
             float whitePercent = whiteRemainTime / whiteFullTime;
-            float rotationAmount = -360f * (1 - whitePercent); // ¡ç À½¼ö·Î º¯°æ
+            float rotationAmount = -360f * (1 - whitePercent); // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             whiteClockHand.transform.rotation = whiteStartRot * Quaternion.Euler(0, 0, rotationAmount);
         }
 
         if (blackClockHand != null)
         {
             float blackPercent = blackRemainTime / blackFullTime;
-            float rotationAmount = -360f * (1 - blackPercent); // ¡ç À½¼ö·Î º¯°æ
+            float rotationAmount = -360f * (1 - blackPercent); // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             blackClockHand.transform.rotation = blackStartRot * Quaternion.Euler(0, 0, rotationAmount);
         }
     }
