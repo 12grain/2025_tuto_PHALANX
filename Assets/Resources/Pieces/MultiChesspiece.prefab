@@ -79,12 +79,12 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -3439709500497429360, guid: 14789ea864a7b5e4c97459f3fed44397, type: 3}
+  m_Sprite: {fileID: -3439709500497429360, guid: 623a8aa5a0b7f4845ae4781d802fb3d6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 0.13, y: 0.16}
+  m_Size: {x: 0.68, y: 1.04}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -120,7 +120,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -129,12 +129,12 @@ BoxCollider2D:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
     oldSize: {x: 0.68, y: 1.04}
-    newSize: {x: 0.13, y: 0.16}
+    newSize: {x: 0.68, y: 1.04}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.7, y: 0.7}
+  m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
 --- !u!114 &1395012767510863257
 MonoBehaviour:
@@ -150,19 +150,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   controller: {fileID: 0}
   movePlate: {fileID: 496619246893154284, guid: 764539a881b6c7c4d8997736aa6a6064, type: 3}
-  black_queenP: {fileID: 6645289695748201938, guid: 157063b1b13094e40ac515e3e97b43f6, type: 3}
-  black_knightP: {fileID: 5679192021803627342, guid: 64ebe3a85acb4c548b4c4903a9e10e30, type: 3}
-  black_bishopP: {fileID: 559377119057321143, guid: 7567e2b32f937874792d1112fedc5551, type: 3}
-  black_kingP: {fileID: 151059433806550210, guid: 96303c13cf1862246b274552e4efdcaf, type: 3}
-  black_rookP: {fileID: 9163454168139039931, guid: 1ba9755d955e33b40970fae66e39f6a4, type: 3}
-  black_pawnP: {fileID: 2552943478557970186, guid: 0b90b70163c9cf7479e33a4563982297, type: 3}
-  white_queenP: {fileID: 4792189194855315941, guid: 494e955e61841c249923621e285e7514, type: 3}
-  white_knightP: {fileID: 2910177884958702352, guid: aa659c405281c6d448a3fc816496867d, type: 3}
-  white_bishopP: {fileID: 3492448702377042229, guid: 087d9ba44b18c5948a64aa4ca7bab753, type: 3}
-  white_kingP: {fileID: 7651887421977685848, guid: 3fe7baaa539f70e4eb5097c04164dded, type: 3}
-  white_rookP: {fileID: 5858852469831328582, guid: 6b4af29ec458f7643889e7bf68487872, type: 3}
-  white_pawnP: {fileID: 8445592998277578410, guid: 678ca49fa2abce344b6eec26adb1f2db, type: 3}
-  black_queen: {fileID: -7779958110830305896, guid: a05dfc8da21b3f940a99e1cebc09ce52, type: 3}
+  moveDuration: 0.3
+  hopHeight: 0.5
+  black_queenP: {fileID: 6645289695748201938, guid: 90dc818adf9534048b0a22f4b910c0ef, type: 3}
+  black_knightP: {fileID: 5679192021803627342, guid: 71c2e1bc9bab3494cae987139a6948cf, type: 3}
+  black_bishopP: {fileID: 559377119057321143, guid: 390aaba8880147a4d93c4a9ac90c1448, type: 3}
+  black_kingP: {fileID: 151059433806550210, guid: 57c4ffdda27cf8d4481df85100605832, type: 3}
+  black_rookP: {fileID: 9163454168139039931, guid: 9513096843304f44bbefdc31fd39d6ea, type: 3}
+  black_pawnP: {fileID: 2552943478557970186, guid: 54ebc8038083d404e89767b43cae3bb2, type: 3}
+  white_queenP: {fileID: 4792189194855315941, guid: de778954a2e3ae749abd4d7388da59da, type: 3}
+  white_knightP: {fileID: 2910177884958702352, guid: c847cb0fa4fb5914c989ba996a726fae, type: 3}
+  white_bishopP: {fileID: 3492448702377042229, guid: f4e40d079efe3b44fad42bf8ef42654e, type: 3}
+  white_kingP: {fileID: 7651887421977685848, guid: 187227ed77ff32542882bf8da094674c, type: 3}
+  white_rookP: {fileID: 5858852469831328582, guid: 407dd1ac1514681498accb06a35f0ac4, type: 3}
+  white_pawnP: {fileID: 8445592998277578410, guid: 0160645a7c62fd449828c15dc9ad8356, type: 3}
+  white_PHALANX_P: {fileID: 1859702523106945436, guid: afffce6ef61b70347996ba7b1244fd32, type: 3}
+  white_TESTUDO_P: {fileID: 1859702523106945436, guid: 164685854c835af439d90eca7adbafc9, type: 3}
+  white_CHEVALIER_P: {fileID: 1859702523106945436, guid: eac104dc9e4b01947aa0db25d75e0b0d, type: 3}
+  white_BASTION_P: {fileID: 1859702523106945436, guid: 8867daf754c230b41b12cdcdfd7121f4, type: 3}
+  black_PHALANX_P: {fileID: 1859702523106945436, guid: d7d0c251535678a4487c8e500d4e63c0, type: 3}
+  black_TESTUDO_P: {fileID: 1859702523106945436, guid: 86f0d134d8589de49ad60ab1c2dd5f80, type: 3}
+  black_CHEVALIER_P: {fileID: 1859702523106945436, guid: fd75304e2d348964e8ad274dac887f10, type: 3}
+  black_BASTION_P: {fileID: 1859702523106945436, guid: c07e97ba06b656942b566b55759e3d9b, type: 3}
+  black_queen: {fileID: -7779958110830305896, guid: 7c6f6f29bb81b71428ea39cb97ec07ea, type: 3}
   black_knight: {fileID: 0}
   black_bishop: {fileID: 0}
   black_king: {fileID: 0}
@@ -174,6 +184,14 @@ MonoBehaviour:
   white_king: {fileID: 0}
   white_rook: {fileID: 0}
   white_pawn: {fileID: 0}
+  white_PHALANX: {fileID: 0}
+  white_TESTUDO: {fileID: 0}
+  white_CHEVALIER: {fileID: 0}
+  white_BASTION: {fileID: 0}
+  black_PHALANX: {fileID: 0}
+  black_TESTUDO: {fileID: 0}
+  black_CHEVALIER: {fileID: 0}
+  black_BASTION: {fileID: 0}
 --- !u!114 &935955441832729926
 MonoBehaviour:
   m_ObjectHideFlags: 0

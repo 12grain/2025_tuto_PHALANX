@@ -100,7 +100,7 @@ public class TimeManager : MonoBehaviourPun
        // blackText.text = "black : " + blackRemainTime;
 
 
-        photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
+        //photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
 
 
 
