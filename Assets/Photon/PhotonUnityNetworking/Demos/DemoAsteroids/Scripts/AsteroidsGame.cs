@@ -16,6 +16,8 @@ namespace Photon.Pun.Demo.Asteroids
         public const string PLAYER_LOADED_LEVEL = "PlayerLoadedLevel";
         public const string PLAYER_COLOR = "PlayerColor";
 
+        public static byte PLAYER_WB_TOGGLE { get; internal set; }
+
         public static Color GetColor(int colorChoice)
         {
             switch (colorChoice)

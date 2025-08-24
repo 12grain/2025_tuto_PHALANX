@@ -1,71 +1,67 @@
-using Photon.Pun;
+ï»¿using Photon.Pun;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class PromotionManager : MonoBehaviourPunCallbacks
 {
+    public static PromotionManager Instance; // ï¿½Ù¸ï¿½ ï¿½ï¿½Å©ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ static instance
+
     [Header("UI Elements")]
     public GameObject promotionPanel;
     public Button queenButton, rookButton, bishopButton, knightButton;
-    public GameObject chesspiecePrefab;
 
     private MultiGame gameController;
+
+    // ï¿½ï¿½ï¿½Î¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ó½Ã·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ø¾ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     private MultiChessMan pawnToPromote;
+    private int targetX;
+    private int targetY;
+    private bool isAttack;
+    private int capturedID;
 
     void Awake()
     {
+        Instance = this; // ï¿½Ú±ï¿½ ï¿½Ú½ï¿½ï¿½ï¿½ static instanceï¿½ï¿½ ï¿½ï¿½ï¿½
         promotionPanel.SetActive(false);
-        gameController = GameObject.FindGameObjectWithTag("GameController")
-                                 .GetComponent<MultiGame>();
+        gameController = GameObject.FindGameObjectWithTag("GameController").GetComponent<MultiGame>();
     }
 
     void Start()
     {
+        // ï¿½ï¿½Æ°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ PromoteAs ï¿½Ô¼ï¿½ï¿½ï¿½ È£ï¿½ï¿½Çµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ ï¿½Îºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         queenButton.onClick.AddListener(() => PromoteAs("queen"));
         rookButton.onClick.AddListener(() => PromoteAs("rook"));
         bishopButton.onClick.AddListener(() => PromoteAs("bishop"));
         knightButton.onClick.AddListener(() => PromoteAs("knight"));
     }
 
-
-    [PunRPC]
-    public void RPC_ShowPromotionUI(int pawnViewID)
+    // ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ì»ï¿½ RPCï¿½ï¿½ ï¿½Æ´Õ´Ï´ï¿½. MultiChessManï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ È£ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+    public void ShowPromotionUI(MultiChessMan pawn, int tX, int tY, bool attack, int capID)
     {
-        Debug.Log("ÇÁ·Î¸ð¼Ç½ÃÀÛ");
-        var pawnObj = PhotonView.Find(pawnViewID).gameObject;
-        if (pawnObj != null)
-            pawnToPromote = pawnObj.GetComponent<MultiChessMan>();
+        // ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        pawnToPromote = pawn;
+        targetX = tX;
+        targetY = tY;
+        isAttack = attack;
+        capturedID = capID;
+
+        // UIï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         promotionPanel.SetActive(true);
-        Debug.Log("ÆÇ³Ú¼ÒÈ¯");
+
+        // ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½å¿¡ï¿½ï¿½ ï¿½ï¿½Ã»
+        gameController.GetComponent<PhotonView>().RPC("RPC_SetInteractionState", RpcTarget.All, true);
     }
 
+    // ï¿½ï¿½Æ°ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ ï¿½Ô¼ï¿½
     void PromoteAs(string pieceType)
     {
-        // 1) ±âÁ¸ Æù º¸µå ¹è¿­¿¡¼­ Á¦°Å
-        int x = pawnToPromote.GetXBoard();
-        int y = pawnToPromote.GetYBoard();
-        gameController.SetPositionEmpty(x, y);
-
-        // ±×¸®°í ³×Æ®¿öÅ© ÆÄ±«
-        pawnToPromote.photonView.RPC("DestroySelf", RpcTarget.AllBuffered);
-
-        // 2) ³×Æ®¿öÅ©·Î »õ ±â¹° »ý¼º
-        Vector3 worldPos = new Vector3(x * 0.66f - 2.3f, y * 0.66f - 2.3f, -1f);
-        GameObject newPiece = PhotonNetwork.Instantiate(
-            "Pieces/MultiChesspiece", worldPos, Quaternion.identity
-        );
-        // ÀÌ¸§ ¼¼ÆÃ
-        string ownerColor = pawnToPromote.GetPlayer();
-        newPiece.name = ownerColor + "_" + pieceType;
-
-        // 3) SetupSprite ·Î ·ÎÁ÷ ÃÊ±âÈ­
-        //    (ÀÌ RPC ¾È¿¡¼­ SetPosition µµ ÇØ ÁÖµµ·Ï ¹Ì¸® ÀÛ¼ºÇØ µÎ¼¼¿ä)
-        newPiece.GetComponent<PhotonView>()
-                .RPC("SetupSprite",
-                     RpcTarget.AllBuffered,
-                     newPiece.name, x, y);
-
-        // 4) UI ´Ý°í ÅÏ ÀüÈ¯
+        // UIï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         promotionPanel.SetActive(false);
+
+        if (pawnToPromote == null) return;
+
+        // ï¿½ï¿½ï¿½å¿¡ï¿½ï¿½ "ï¿½ï¿½ï¿½ ï¿½Øºï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¼ï¿½ï¿½ï¿½" ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã»ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        gameController.GetComponent<PhotonView>().RPC("RPC_ExecutePromotion", RpcTarget.MasterClient,
+            pawnToPromote.photonView.ViewID, targetX, targetY, capturedID, pieceType);
     }
 }

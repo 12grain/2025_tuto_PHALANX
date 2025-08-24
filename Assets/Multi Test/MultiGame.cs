@@ -1,5 +1,5 @@
-using Photon.Pun;
-using Photon.Pun.Demo.PunBasics;
+ï»¿using Photon.Pun;
+using Photon.Pun.Demo.Asteroids;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -14,6 +14,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
     public GameObject chesspiece;
     public Sprite boardSprite;
     public Sprite backgroundSprite;
+    public PromotionManager promotionManager;
 
     // Positions and team for each chesspiece
     private GameObject[,] positions = new GameObject[8, 8];
@@ -21,29 +22,30 @@ public class MultiGame : MonoBehaviourPunCallbacks
     private GameObject[] playerWhite = new GameObject[16];
 
     private string myPlayerColor;
-    private string currentPlayer ;
+    private string currentPlayer;
 
     private bool gameOver = false;
+    public bool isInteractionBlocked = false;
     private PhotonView pv;
 
-    public float tileSize = 0.66f;                 // ÀÚµ¿ Àç°è»ê µÇÁö¸¸ ±âº»°ª
-    public Vector2 boardOrigin = Vector2.zero;     // 0,0 Ä­(=a1)ÀÇ ¿ùµå ÁÂÇ¥(¼¾ÅÍ)
+    public float tileSize = 0.66f;                 // ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½âº»ï¿½ï¿½
+    public Vector2 boardOrigin = Vector2.zero;     // 0,0 Ä­(=a1)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥(ï¿½ï¿½ï¿½ï¿½)
     public float boardWorldWidth = 0f;
     public float boardWorldHeight = 0f;
 
     //private bool turnChanged = false;
-   // public TimeManager timeManager; // ½Ã°£ °ü¸® ÇØÁÖ´Â ¼Ò½º ÄÚµå 
+
 
     void Awake()
     {
-        myPlayerColor = PlayerPrefs.GetString("MyColor"); 
-        Debug.Log("³» ÇÃ·¹ÀÌ¾î »öÀº: " + myPlayerColor);
+        myPlayerColor = PlayerColorManager.instance.GetMyToggle() ? "white" : "black";
+        Debug.Log("ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½: " + myPlayerColor);
     }
 
     void Start()
     {
 
-        //¹è°æ ¹èÄ¡
+        //ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡
         GameObject background = new GameObject("background");
         background.transform.position = new Vector3(0f, 0f, 0);
         var backgroundSr = background.AddComponent<SpriteRenderer>();
@@ -51,7 +53,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         backgroundSr.sortingLayerName = "Board";
         backgroundSr.sortingOrder = 0;
 
-        //board ¹èÄ¡
+        //board ï¿½ï¿½Ä¡
         GameObject board = new GameObject("Board");
         board.transform.position = new Vector3(0f, 0f, 0);
         var boardSr = board.AddComponent<SpriteRenderer>();
@@ -59,7 +61,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         boardSr.sortingLayerName = "Board";
         boardSr.sortingOrder = 1;
 
-        RecalculateBoardMetrics(); //º¸µå Àç¹èÄ¡ (»õ·Î¿î ¿¡¼ÂÀ¸·Î ÀÎÇÑ Å©±âº¯°æ)
+        RecalculateBoardMetrics(); //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ä¡ (ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å©ï¿½âº¯ï¿½ï¿½)
 
         currentPlayer = "white";
 
@@ -78,15 +80,15 @@ public class MultiGame : MonoBehaviourPunCallbacks
             Create("black_pawn", 0, 6), Create("black_pawn", 1, 6), Create("black_pawn", 2, 6),
             Create("black_pawn", 3, 6), Create("black_pawn", 4, 6), Create("black_pawn", 5, 6),
             Create("black_pawn", 6, 6), Create("black_pawn", 7, 6) };
-        
 
-        // Set all piece positions on the position board
-        for (int i = 0; i < playerBlack.Length; i++)
-        {
-            SetPosition(playerBlack[i]);
-            SetPosition(playerWhite[i]);
-        }
-        
+
+            // Set all piece positions on the position board
+            for (int i = 0; i < playerBlack.Length; i++)
+            {
+                SetPosition(playerBlack[i]);
+                SetPosition(playerWhite[i]);
+            }
+
         }
     }
 
@@ -98,37 +100,59 @@ public class MultiGame : MonoBehaviourPunCallbacks
         var sr = boardObj.GetComponent<SpriteRenderer>();
         if (sr == null || sr.sprite == null) return;
 
-        // º¸µåÀÇ ½ÇÁ¦ ¿ùµå »çÀÌÁî
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         boardWorldWidth = sr.bounds.size.x;
         boardWorldHeight = sr.bounds.size.y;
 
-        // ÇÑ Ä­ Å©±â
+        // ï¿½ï¿½ Ä­ Å©ï¿½ï¿½
         tileSize = boardWorldWidth / 8f;
 
-        // (0,0) Ä­ÀÇ CENTER ÁÂÇ¥ °è»ê:
-        // boardObj.transform.position Àº º¸µåÀÇ Áß½É(°¡Á¤). 
-        // ¿ÞÂÊ ÇÏ´Ü ¸ð¼­¸® = center - (width/2, height/2)
+        // (0,0) Ä­ï¿½ï¿½ CENTER ï¿½ï¿½Ç¥ ï¿½ï¿½ï¿½:
+        // boardObj.transform.position ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß½ï¿½(ï¿½ï¿½ï¿½ï¿½). 
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½Ï´ï¿½ ï¿½ð¼­¸ï¿½ = center - (width/2, height/2)
         float left = boardObj.transform.position.x - boardWorldWidth / 2f;
         float bottom = boardObj.transform.position.y - boardWorldHeight / 2f;
 
-        // (0,0) Å¸ÀÏÀÇ center = left + tileSize/2, bottom + tileSize/2
+        // (0,0) Å¸ï¿½ï¿½ï¿½ï¿½ center = left + tileSize/2, bottom + tileSize/2
         boardOrigin = new Vector2(left + tileSize * 0.5f, bottom + tileSize * 0.5f);
 
         Debug.Log($"Recalc: boardW={boardWorldWidth}, tileSize={tileSize}, boardOrigin={boardOrigin}");
     }
 
+    // MultiGame.cs
+
     public GameObject Create(string name, int x, int y)
     {
-        Vector3 spawnPos = new Vector3(0f, 0f, 0);
-        GameObject obj = PhotonNetwork.Instantiate("Pieces/MultiChesspiece", spawnPos, Quaternion.identity);
-        var sr = obj.GetComponent<SpriteRenderer>();
+        // 1. ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½("white_CHEVALIER")ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½â¹° Å¸ï¿½ï¿½("CHEVALIER")ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+        string pieceType = name.Split('_')[1];
+        string prefabToInstantiate;
 
+        // 2. ï¿½â¹° Å¸ï¿½ï¿½ï¿½ï¿½ 'ï¿½Õ¼ï¿½ ï¿½â¹°' ï¿½ï¿½ ï¿½Ï³ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+        if (pieceType == "PHALANX" || pieceType == "TESTUDO" || pieceType == "CHEVALIER" || pieceType == "BASTION")
+        {
+            // 2-1. ï¿½Õ¼ï¿½ ï¿½â¹°ï¿½Ì¶ï¿½ï¿½, ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ ï¿½×´ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+            // ï¿½ï¿½: "white_CHEVALIER" -> "white_CHEVALIER.prefab"
+            prefabToInstantiate = name;
+        }
+        else
+        {
+            // 2-2. ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ï¹ï¿½ ï¿½â¹°(rook, pawn ï¿½ï¿½)ï¿½Ì¶ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½âº» ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+            prefabToInstantiate = "MultiChesspiece";
+        }
+
+        // 3. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Î¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½Ã¹Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+        string prefabPath = "Pieces/" + prefabToInstantiate;
+        Vector3 spawnPos = new Vector3(0f, 0f, 0);
+        GameObject obj = PhotonNetwork.Instantiate(prefabPath, spawnPos, Quaternion.identity);
+
+        // 4. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ RPCï¿½ï¿½ È£ï¿½ï¿½ï¿½Õ´Ï´ï¿½. (ï¿½ï¿½ ï¿½Îºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         PhotonView pv = obj.GetComponent<PhotonView>();
         pv.RPC("SetupSprite", RpcTarget.AllBuffered, name, x, y);
+
         return obj;
     }
 
-    // ÀÌ°É·Î º¸µå À§Ä¡ º¯°æ
+    // ï¿½Ì°É·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½
     public void SetPosition(GameObject obj)
     {
         MultiChessMan cm = obj.GetComponent<MultiChessMan>();
@@ -163,26 +187,27 @@ public class MultiGame : MonoBehaviourPunCallbacks
         return true;
     }
 
-    //GetCurrentPlayer()Àº ÇöÀç ÇÃ·¹ÀÌ¾î¸¦ ³ªÅ¸³»±âÀ§ÇÑ string º¯¼ö currentPlayer¸¦ ¹ÝÈ¯ÇÕ´Ï´Ù.
+    //GetCurrentPlayer()ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾î¸¦ ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ string ï¿½ï¿½ï¿½ï¿½ currentPlayerï¿½ï¿½ ï¿½ï¿½È¯ï¿½Õ´Ï´ï¿½.
     public string GetCurrentPlayer()
     {
         return currentPlayer;
     }
 
-    public string GetMyPlayerColor() {
-    return myPlayerColor;
+    public string GetMyPlayerColor()
+    {
+        return myPlayerColor;
     }
-    //IsGameOver()Àº Ã¼Å©¸ÞÀÌÆ®»óÅÂ(°ÔÀÓÁ¾·á»óÅÂ)ÀÎÁö¸¦ ³ªÅ¸³»±â À§ÇÑ bool º¯¼ö gameOver¸¦ ¹ÝÈ¯ÇÕ´Ï´Ù.
+    //IsGameOver()ï¿½ï¿½ Ã¼Å©ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ bool ï¿½ï¿½ï¿½ï¿½ gameOverï¿½ï¿½ ï¿½ï¿½È¯ï¿½Õ´Ï´ï¿½.
     public bool IsGameOver()
     {
         return gameOver;
     }
 
-    //NextTurn()Àº ÇöÀç°¡ ¹éÀÇ Â÷·ÊÀÌ¸é Èæ¿¡°Ô, ÈæÀÇ Â÷·ÊÀÌ¸é ¹é¿¡°Ô ³Ñ±â´Â ¾Ë°í¸®ÁòÀ» ±¸ÇöÇÕ´Ï´Ù.
-    [PunRPC]//µ¿½Ã¿¡ ±¸ÇöµÇ¾î¾ß ÇÒ ÇÔ¼ö
-    public void NextTurn() 
+    //NextTurn()ï¿½ï¿½ ï¿½ï¿½ï¿½ç°¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½æ¿¡ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½é¿¡ï¿½ï¿½ ï¿½Ñ±ï¿½ï¿½ ï¿½Ë°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+    [PunRPC]//ï¿½ï¿½ï¿½Ã¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ï¿½ ï¿½ï¿½ ï¿½Ô¼ï¿½
+    public void NextTurn()
     {
-        
+
         if (currentPlayer == "white")
         {
             currentPlayer = "black";
@@ -191,14 +216,13 @@ public class MultiGame : MonoBehaviourPunCallbacks
         {
             currentPlayer = "white";
         }
-        Debug.Log("ÅÏ ³Ñ±è");
+        Debug.Log("ï¿½ï¿½ ï¿½Ñ±ï¿½");
     }
-   
+
 
     public void CallNextTurn()
     {
         photonView.RPC("NextTurn", RpcTarget.AllBuffered);
-
     }
 
     public void DestroyMovePlates()
@@ -210,55 +234,109 @@ public class MultiGame : MonoBehaviourPunCallbacks
         }
     }
 
+    // MultiGame.cs
+
+    // MultiGame.cs ï¿½ï¿½ RequestMovePiece ï¿½Ô¼ï¿½
     [PunRPC]
     public void RequestMovePiece(int attackerID, int targetX, int targetY, int capturedID, bool isCastle)
     {
-        
-        // ¹æÀåÀÌ ¾Æ´Ï¸é ¾Æ¹«°Íµµ ÇÏÁö ¾ÊÀ½ (º¸¾È)
         if (!PhotonNetwork.IsMasterClient) return;
 
-        // --- ¿©±â¿¡¼­ ¹æÀåÀº Àü´Þ¹ÞÀº Á¤º¸·Î ÀÌµ¿ÀÌ À¯È¿ÇÑÁö °ËÁõÇÒ ¼ö ÀÖ½À´Ï´Ù ---
-        // ¿¹: ÅÏÀÌ ¸Â´ÂÁö, ±ÔÄ¢¿¡ ¸Â´ÂÁö µî (Áö±ÝÀº »ý·«)
-        // ---------------------------------------------------------------------
+        PhotonView attackerView = PhotonView.Find(attackerID);
+        if (attackerView == null) return;
+        MultiChessMan attackerCm = attackerView.GetComponent<MultiChessMan>();
 
-        // Ä³½½¸µ ¿äÃ»ÀÏ °æ¿ì
-        if (isCastle)
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½Öµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½â¼­ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½Õ´Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
+        bool wasGarrisoned = attackerCm.IsGarrisoned();
+        int bastionToReleaseID = -1;
+
+        if (wasGarrisoned)
         {
-            // Ä³½½¸µ ½ÇÇà RPC¸¦ ¸ðµç Å¬¶óÀÌ¾ðÆ®¿¡°Ô º¸³¿
-            photonView.RPC("RPC_ExecuteCastling", RpcTarget.All, attackerID, targetX);
-        }
-        else // ÀÏ¹Ý ÀÌµ¿/°ø°Ý ¿äÃ»ÀÏ °æ¿ì
-        {
-            // 1. ÀâÈ÷´Â ¸»ÀÌ ÀÖÀ¸¸é ÆÄ±« RPC ½ÇÇà
-            if (capturedID != -1)
+            bastionToReleaseID = attackerCm.GetGarrisonedBastionID();
+            PhotonView bastionView = PhotonView.Find(bastionToReleaseID);
+
+            if (bastionView != null)
             {
-                PhotonView.Find(capturedID)?.RPC("DestroySelf", RpcTarget.AllBuffered);
+                bastionView.RPC("RPC_SetVisible", RpcTarget.All, true);
             }
 
-            // 2. °ø°ÝÇÏ´Â ¸»À» ÀÌµ¿½ÃÅ°´Â RPC ½ÇÇà
-            PhotonView.Find(attackerID)?.RPC("MoveTo", RpcTarget.AllBuffered, targetX, targetY);
+            attackerView.RPC("RPC_SetGarrisonStatus", RpcTarget.All, false, -1);
         }
 
-        // ¡å¡å¡å ¸»ÀÇ Ã¹ ÀÌµ¿ »óÅÂ¸¦ ¾÷µ¥ÀÌÆ®ÇÏ´Â RPC È£Ãâ ¡å¡å¡å
-        PhotonView.Find(attackerID)?.RPC("RPC_UpdateMovedStatus", RpcTarget.All);
+        if (isCastle)
+        {
+            photonView.RPC("RPC_ExecuteCastling", RpcTarget.All, attackerID, targetX);
+        }
+        else
+        {
+            if (capturedID != -1) // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+            {
+                PhotonView capturedView = PhotonView.Find(capturedID);
+                if (capturedView != null)
+                {
+                    MultiChessMan capturedCm = capturedView.GetComponent<MultiChessMan>();
 
-        // 4. ¸ðµç Ã³¸®°¡ ³¡³µÀ¸¹Ç·Î, ´ÙÀ½ ÅÏÀ¸·Î ³Ñ±è
+                    // ï¿½ï¿½ï¿½ï¿½ ï¿½È¶ï¿½Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½â¿¡ ï¿½ß°ï¿½ï¿½Õ´Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
+                    // 1. ï¿½ï¿½ï¿½Ý¹Þ´ï¿½ ï¿½â¹°ï¿½ï¿½ 'ï¿½È¶ï¿½Å©ï¿½ï¿½'ï¿½Ì°ï¿½, 'ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½ï¿½'ï¿½ï¿½ È°ï¿½ï¿½È­ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
+                    if (capturedCm.gameObject.name.Contains("PHALANX") && capturedCm.HasPhalanxShield())
+                    {
+                        // 2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 'ï¿½ï¿½ï¿½ï¿½'ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
+                        bool isSameFile = (attackerCm.GetXBoard() == capturedCm.GetXBoard());
+                        string phalanxColor = capturedCm.GetPlayer();
+                        int attackerY = attackerCm.GetYBoard();
+                        int phalanxY = capturedCm.GetYBoard();
+
+                        bool isFrontalAttack = (phalanxColor == "white" && attackerY > phalanxY) ||
+                                               (phalanxColor == "black" && attackerY < phalanxY);
+
+                        // 3. ï¿½ï¿½ï¿½ï¿½ 'ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½'ï¿½ï¿½ ï¿½Â´Ù¸ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½ï¿½ï¿½ï¿½ ï¿½Ò¸ï¿½
+                        if (isSameFile && isFrontalAttack)
+                        {
+                            Debug.Log("ï¿½È¶ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ß½ï¿½ï¿½Ï´ï¿½!");
+                            capturedView.RPC("RPC_ConsumePhalanxShield", RpcTarget.All);
+                            // ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½ ï¿½Ï¸ï¿½ ï¿½Ñ¾î°©ï¿½Ï´ï¿½.
+                        }
+                        else // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´Ï¶ï¿½ï¿½ (ï¿½ë°¢ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½, ï¿½Ä¹ï¿½)
+                        {
+                            // ï¿½ï¿½È£ï¿½ï¿½ï¿½ï¿½ ï¿½Ò¿ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½, ï¿½Ï¹ï¿½ ï¿½â¹°Ã³ï¿½ï¿½ ï¿½×³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.
+                            capturedView.RPC("DestroySelf", RpcTarget.AllBuffered);
+                            attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, true);
+                        }
+                    }
+                    // 4. ï¿½ï¿½ï¿½Ý¹Þ´ï¿½ ï¿½â¹°ï¿½ï¿½ ï¿½È¶ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´Ï°Å³ï¿½, ï¿½ï¿½È£ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+                    else if (capturedCm.HasShield()) // ï¿½×½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½ï¿½ È®ï¿½ï¿½
+                    {
+                        capturedView.RPC("RPC_SetShield", RpcTarget.All, false);
+                    }
+                    else // ï¿½Æ¹ï¿½ ï¿½ï¿½È£ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ï¹ï¿½ ï¿½â¹°
+                    {
+                        capturedView.RPC("DestroySelf", RpcTarget.AllBuffered);
+                        attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, true);
+                    }
+                }
+            }
+            else // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´ï¿½ ï¿½Ï¹ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+            {
+                attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, false);
+            }
+        }
+
+        attackerView.RPC("RPC_UpdateMovedStatus", RpcTarget.All);
         CallNextTurn();
     }
-
-    // Ä³½½¸µ °¡´É ¿©ºÎ¸¦ È®ÀÎÇÏ´Â »ó¼¼ ÇÔ¼ö
+    // Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ È®ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ ï¿½Ô¼ï¿½
     public bool CanCastle(int kingX, int kingY, bool isKingSide)
     {
-        // 1. Å· »çÀÌµå(¿À¸¥ÂÊ) Ä³½½¸µ È®ÀÎ
+        // 1. Å· ï¿½ï¿½ï¿½Ìµï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½) Ä³ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
         if (isKingSide)
         {
-            // 1-1. °æ·Î°¡ ºñ¾ú´ÂÁö È®ÀÎ
+            // 1-1. ï¿½ï¿½Î°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
             if (positions[kingX + 1, kingY] != null || positions[kingX + 2, kingY] != null)
             {
                 return false;
             }
 
-            // 1-2. ÄÚ³Ê¿¡ ·èÀÌ ÀÖ´ÂÁö È®ÀÎ
+            // 1-2. ï¿½Ú³Ê¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½
             GameObject rookObj = positions[kingX + 3, kingY];
             if (rookObj == null || !rookObj.name.Contains("rook"))
             {
@@ -268,28 +346,28 @@ public class MultiGame : MonoBehaviourPunCallbacks
             MultiChessMan rookCm = rookObj.GetComponent<MultiChessMan>();
             if (rookCm == null || !rookCm.GetRookNeverMove())
             {
-                // ·èÀÇ ½ºÅ©¸³Æ®°¡ ¾ø°Å³ª, GetRookNeverMove()°¡ false¸¦ ¹ÝÈ¯ÇÏ¸é Ä³½½¸µ ºÒ°¡
+                // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å©ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½Å³ï¿½, GetRookNeverMove()ï¿½ï¿½ falseï¿½ï¿½ ï¿½ï¿½È¯ï¿½Ï¸ï¿½ Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½Ò°ï¿½
                 return false;
             }
-            return true; // ¸ðµç Á¶°ÇÀ» Åë°ú
+            return true; // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
         }
-        // 2. Äý »çÀÌµå(¿ÞÂÊ) Ä³½½¸µ È®ÀÎ
+        // 2. ï¿½ï¿½ ï¿½ï¿½ï¿½Ìµï¿½(ï¿½ï¿½ï¿½ï¿½) Ä³ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
         else
         {
-            // 2-1. °æ·Î°¡ ºñ¾ú´ÂÁö È®ÀÎ
+            // 2-1. ï¿½ï¿½Î°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
             if (positions[kingX - 1, kingY] != null || positions[kingX - 2, kingY] != null || positions[kingX - 3, kingY] != null)
             {
                 return false;
             }
 
-            // 2-2. ÄÚ³Ê¿¡ ·èÀÌ ÀÖ´ÂÁö È®ÀÎ
+            // 2-2. ï¿½Ú³Ê¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½
             GameObject rookObj = positions[kingX - 4, kingY];
             if (rookObj == null || !rookObj.name.Contains("rook"))
             {
                 return false;
             }
 
-            // 2-3. ±× ·èÀÌ ¿òÁ÷ÀÎ Àû ¾ø´ÂÁö È®ÀÎ
+            // 2-3. ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
             MultiChessMan rookCm = rookObj.GetComponent<MultiChessMan>();
             if (rookCm == null || !rookCm.GetRookNeverMove())
             {
@@ -300,7 +378,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
     }
 
 
-    // MultiGame.cs ¿¡ ÀÖ´Â RPC_ExecuteCastling ÇÔ¼ö
+    // MultiGame.cs ï¿½ï¿½ ï¿½Ö´ï¿½ RPC_ExecuteCastling ï¿½Ô¼ï¿½
     [PunRPC]
     public void RPC_ExecuteCastling(int kingID, int kingTargetX)
     {
@@ -311,17 +389,15 @@ public class MultiGame : MonoBehaviourPunCallbacks
         int y = kingCm.GetYBoard();
         bool isKingSide = kingTargetX > startKingX;
 
-        // 1. Å· ÀÌµ¿
+        // 1. Å· ï¿½Ìµï¿½
         SetPositionEmpty(startKingX, y);
 
-        // ¡å¡å¡å ÀÌ ºÎºÐÀÌ ¼öÁ¤µÇ¾ú½À´Ï´Ù ¡å¡å¡å
-        kingCm.SetXBoard(kingTargetX); // 1. ³»ºÎ XÁÂÇ¥¸¦ ¸ÕÀú ¹Ù²Ù°í
-                                       // kingCm.SetYBoard(y); // y´Â ±×´ë·ÎÁö¸¸, ¸íÈ®¼ºÀ» À§ÇØ ½áÁàµµ ÁÁ½À´Ï´Ù.
-        kingCm.SetCoords();           // 2. ¹Ù²ï ³»ºÎ ÁÂÇ¥¸¦ º¸°í ½ÇÁ¦ À§Ä¡¸¦ ¿Å±â°Ô ÇÑ´Ù.
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Îºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
+        kingObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, kingTargetX, y, false);         // 2. ï¿½Ù²ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½Å±ï¿½ï¿½ ï¿½Ñ´ï¿½.
 
         SetPosition(kingObj);
 
-        // 2. ·è Ã£±â ¹× ÀÌµ¿
+        // 2. ï¿½ï¿½ Ã£ï¿½ï¿½ ï¿½ï¿½ ï¿½Ìµï¿½
         int rookStartX = isKingSide ? 7 : 0;
         int rookTargetX = isKingSide ? kingTargetX - 1 : kingTargetX + 1;
 
@@ -331,18 +407,246 @@ public class MultiGame : MonoBehaviourPunCallbacks
             MultiChessMan rookCm = rookObj.GetComponent<MultiChessMan>();
             SetPositionEmpty(rookStartX, y);
 
-            // ¡å¡å¡å ·èµµ ¶È°°ÀÌ ¼öÁ¤µÇ¾ú½À´Ï´Ù ¡å¡å¡å
-            rookCm.SetXBoard(rookTargetX); // 1. ³»ºÎ XÁÂÇ¥¸¦ ¸ÕÀú ¹Ù²Ù°í
-            rookCm.SetCoords();            // 2. ½ÇÁ¦ À§Ä¡¸¦ ¿Å±â°Ô ÇÑ´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½èµµ ï¿½È°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
+            rookObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, rookTargetX, y, false);
 
             SetPosition(rookObj);
         }
     }
 
+    // MultiGame.cs ï¿½ï¿½ ï¿½ß°ï¿½ (ï¿½ï¿½ï¿½ï¿½ RequestPawnMoveAndShowPromotionUIï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+
+    [PunRPC]
+    public void RPC_ExecutePromotion(int pawnViewID, int targetX, int targetY, int capturedID, string pieceType)
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        // 1. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ä±ï¿½
+        if (capturedID != -1)
+        {
+            PhotonView.Find(capturedID)?.RPC("DestroySelf", RpcTarget.AllBuffered);
+        }
+
+        // 2. ï¿½ï¿½ï¿½Î¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ä±ï¿½
+        GameObject pawnObj = PhotonView.Find(pawnViewID)?.gameObject;
+        if (pawnObj == null) return;
+
+        MultiChessMan pawnCm = pawnObj.GetComponent<MultiChessMan>();
+        int startX = pawnCm.GetXBoard();
+        int startY = pawnCm.GetYBoard();
+        string playerColor = pawnCm.GetPlayer();
+
+        SetPositionEmpty(startX, startY);
+        PhotonNetwork.Destroy(pawnObj);
+
+        // 3. ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½â¹°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 'ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½Ä¡'ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        string newPieceName = playerColor + "_" + pieceType;
+        GameObject newPiece = Create(newPieceName, startX, startY);
+
+        // 4. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½â¹°ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼Ç°ï¿½ ï¿½Ô²ï¿½ 'ï¿½ï¿½Ç¥ ï¿½ï¿½Ä¡'ï¿½ï¿½ ï¿½Ìµï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        if (newPiece != null)
+        {
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Îºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½Ï´ï¿½! ï¿½ï¿½ï¿½ï¿½
+            // ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì¾ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ isCapture ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+            bool isCapture = (capturedID != -1);
+
+            // AnimateMoveï¿½ï¿½ È£ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ isCapture ï¿½ï¿½ï¿½ï¿½ ï¿½×´ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+            newPiece.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, isCapture);
+        }
+
+        // 5. ï¿½ï¿½ï¿½Î¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½
+        photonView.RPC("RPC_SetInteractionState", RpcTarget.All, false);
+
+        // 6. ï¿½ï¿½ï¿½ï¿½ ï¿½Ñ±ï¿½
+        CallNextTurn();
+    }
 
 
-    //Update() À¯´ÏÆ¼¿¡¼­ Á¦°øÇÏ´Â À¯´ÏÆ¼ ÀÌº¥Æ® ¸Þ¼Òµå·Î ÇÁ·¹ÀÓÀÌ Àç»ýµÉ¶§¸¶´Ù È£ÃâµÇ´Â ¸Þ¼Òµå ÀÔ´Ï´Ù
-    //gameOver°¡ trueÀÌ°í ¸¶¿ì½º ÁÂÅ¬¸¯ »óÅÂÀÏ¶§ °ÔÀÓÀ» Àç½ÃÀÛÇÕ´Ï´Ù.
+    // ï¿½ï¿½Ã» 2 Ã³ï¿½ï¿½: ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ñ±ï¿½
+    [PunRPC]
+    public void RequestPromotion(int pawnViewID, string pieceType)
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        GameObject pawnObj = PhotonView.Find(pawnViewID)?.gameObject;
+        if (pawnObj == null) return;
+
+        MultiChessMan pawnCm = pawnObj.GetComponent<MultiChessMan>();
+        int x = pawnCm.GetXBoard();
+        int y = pawnCm.GetYBoard();
+        string playerColor = pawnCm.GetPlayer();
+
+        // 1. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½è¿­ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½Ä±ï¿½
+        SetPositionEmpty(x, y);
+        PhotonNetwork.Destroy(pawnObj);
+
+        // 2. ï¿½ï¿½ ï¿½â¹° ï¿½ï¿½ï¿½ï¿½
+        string newPieceName = playerColor + "_" + pieceType;
+        Create(newPieceName, x, y); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Create ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½ï¿½È°ï¿½ï¿½
+
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½Ù½ï¿½ ï¿½ï¿½È£ï¿½Û¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ RPC È£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        photonView.RPC("RPC_SetInteractionState", RpcTarget.All, false);
+
+        // 3. ï¿½ï¿½ï¿½ ï¿½Û¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ñ±ï¿½
+        CallNextTurn();
+    }
+
+    [PunRPC]
+    public void RPC_SetInteractionState(bool isBlocked)
+    {
+        this.isInteractionBlocked = isBlocked;
+    }
+
+    // MultiGame.cs ï¿½ï¿½ RequestEnterBastion ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Úµï¿½ï¿½ ï¿½ï¿½Ã¼
+    [PunRPC]
+    public void RequestEnterBastion(int movingPieceID, int bastionID)
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        PhotonView movingPieceView = PhotonView.Find(movingPieceID);
+        PhotonView bastionView = PhotonView.Find(bastionID);
+
+        if (movingPieceView == null || bastionView == null) return;
+
+        // 1. ï¿½Ù½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        int targetX = bastionView.GetComponent<MultiChessMan>().GetXBoard();
+        int targetY = bastionView.GetComponent<MultiChessMan>().GetYBoard();
+
+        // 2. ï¿½Ù½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½ ï¿½Ï°ï¿½, ï¿½Öµï¿½ï¿½ï¿½ ï¿½â¹° IDï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï¶ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        bastionView.RPC("RPC_SetVisible", RpcTarget.All, false);
+        // (ï¿½Ê¿ï¿½ï¿½Ï´Ù¸ï¿½, ï¿½Ù½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ isOccupied ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Âµï¿½ ï¿½ï¿½ï¿½â¼­ RPCï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½)
+
+        // 3. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½â¹°ï¿½ï¿½ï¿½ï¿½ 'ï¿½Öµï¿½ ï¿½ï¿½ï¿½ï¿½'ï¿½ï¿½ ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ë¸ï¿½ (ï¿½î¶² ï¿½Ù½ï¿½Æ¼ï¿½Â¿ï¿½ ï¿½ï¿½î°¬ï¿½ï¿½ï¿½ï¿½ ID ï¿½ï¿½ï¿½ï¿½)
+        movingPieceView.RPC("RPC_SetGarrisonStatus", RpcTarget.All, true, bastionID);
+
+        // 4. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½â¹°ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼Ç°ï¿½ ï¿½Ô²ï¿½ ï¿½Ù½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½Ìµï¿½ï¿½ï¿½Å´
+        movingPieceView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, false);
+
+        // 5. ï¿½ï¿½ï¿½ï¿½ ï¿½Ñ±ï¿½
+        CallNextTurn();
+    }
+
+    // MultiGame.cs ï¿½ï¿½ ï¿½ß°ï¿½
+
+    // ï¿½ï¿½ ï¿½â¹° ï¿½Ì¸ï¿½ï¿½ï¿½ ï¿½Þ¾ï¿½ ï¿½Õ¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯ï¿½Ï´ï¿½ 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½' ï¿½Ô¼ï¿½
+    public string GetFusionResultType(string piece1Name, string piece2Name)
+    {
+        // ï¿½Ì¸ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Îºï¿½("white_", "black_")ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ø¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½â¹° Å¸ï¿½Ô¸ï¿½ ï¿½ï¿½
+        string type1 = piece1Name.Split('_')[1];
+        string type2 = piece2Name.Split('_')[1];
+
+        // ï¿½È¶ï¿½Å©ï¿½ï¿½ (ï¿½ï¿½ + ï¿½ï¿½)
+        if ((type1 == "pawn" && type2 == "pawn")) return "PHALANX";
+
+        // ï¿½×½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ + ï¿½ï¿½ï¿½)
+        if ((type1 == "pawn" && type2 == "bishop") || (type1 == "bishop" && type2 == "pawn")) return "TESTUDO";
+
+        // ï¿½ï¿½ï¿½ß¸ï¿½ï¿½ï¿½ (ï¿½ï¿½ + ï¿½ï¿½ï¿½ï¿½Æ®)
+        if ((type1 == "pawn" && type2 == "knight") || (type1 == "knight" && type2 == "pawn")) return "CHEVALIER";
+
+        // ï¿½Ù½ï¿½Æ¼ï¿½ï¿½ (ï¿½ï¿½ + ï¿½ï¿½)
+        if ((type1 == "pawn" && type2 == "rook") || (type1 == "rook" && type2 == "pawn")) return "BASTION";
+
+        // ï¿½Õ¼ï¿½ ï¿½Ò°ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì¸ï¿½ null ï¿½ï¿½È¯
+        return null;
+    }
+
+    // MultiGame.cs ï¿½ï¿½ ï¿½ß°ï¿½
+    [PunRPC]
+    public void RequestFusion(int movingPieceID, int stationaryPieceID)
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        GameObject movingPiece = PhotonView.Find(movingPieceID)?.gameObject;
+        GameObject stationaryPiece = PhotonView.Find(stationaryPieceID)?.gameObject;
+
+        if (movingPiece == null || stationaryPiece == null) return;
+
+        // 1. ï¿½Õ¼ï¿½ï¿½ï¿½ ï¿½â¹°ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        MultiChessMan movingCm = movingPiece.GetComponent<MultiChessMan>();
+        MultiChessMan stationaryCm = stationaryPiece.GetComponent<MultiChessMan>();
+        int targetX = stationaryCm.GetXBoard();
+        int targetY = stationaryCm.GetYBoard();
+        string playerColor = movingCm.GetPlayer();
+
+        // 2. ï¿½Õ¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½Ï±ï¿½
+        string resultType = GetFusionResultType(movingPiece.name, stationaryPiece.name);
+        string newPieceName = playerColor + "_" + resultType;
+
+        // 3. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½â¹° ï¿½ï¿½ï¿½å¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½Å© ï¿½Ä±ï¿½
+        SetPositionEmpty(movingCm.GetXBoard(), movingCm.GetYBoard());
+        SetPositionEmpty(stationaryCm.GetXBoard(), stationaryCm.GetYBoard());
+        PhotonNetwork.Destroy(movingPiece);
+        PhotonNetwork.Destroy(stationaryPiece);
+
+        // 4. ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½Õ¼ï¿½ ï¿½â¹° ï¿½ï¿½ï¿½ï¿½
+        GameObject newPiece = Create(newPieceName, targetX, targetY);
+
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½×½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½ï¿½ ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        if (resultType == "TESTUDO" && newPiece != null)
+        {
+            Debug.Log("ï¿½×½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½! ï¿½Öºï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½ï¿½ï¿½ï¿½ ï¿½Î¿ï¿½ï¿½Õ´Ï´ï¿½.");
+            string ownerColor = newPiece.GetComponent<MultiChessMan>().GetPlayer();
+
+            // ï¿½Öºï¿½ 8Ä­ï¿½ï¿½ ï¿½ï¿½ï¿½ È®ï¿½ï¿½
+            for (int i = -1; i <= 1; i++)
+            {
+                for (int j = -1; j <= 1; j++)
+                {
+                    if (i == 0 && j == 0) continue; // ï¿½Ú±ï¿½ ï¿½Ú½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+
+                    int checkX = targetX + i;
+                    int checkY = targetY + j;
+
+                    if (PositionOnBoard(checkX, checkY))
+                    {
+                        GameObject pieceToShield = GetPosition(checkX, checkY);
+                        // ï¿½×°ï¿½ï¿½ï¿½ ï¿½â¹°ï¿½ï¿½ ï¿½Ö°ï¿½, ï¿½ï¿½ ï¿½â¹°ï¿½ï¿½ 'ï¿½Æ±ï¿½'ï¿½ï¿½ ï¿½ï¿½ï¿½
+                        if (pieceToShield != null && pieceToShield.GetComponent<MultiChessMan>().GetPlayer() == ownerColor)
+                        {
+                            // ï¿½ï¿½È£ï¿½ï¿½ï¿½ï¿½ ï¿½Î¿ï¿½ï¿½Ï¶ï¿½ï¿½ RPCï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+                            pieceToShield.GetComponent<PhotonView>().RPC("RPC_SetShield", RpcTarget.All, true);
+                        }
+                    }
+                }
+            }
+        }
+        photonView.RPC("RPC_SetInteractionState", RpcTarget.All, false);
+
+        // 5. ï¿½ï¿½ ï¿½Ñ±ï¿½ï¿½
+        CallNextTurn();
+    }
+
+
+    // MultiGame.cs ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½
+    [PunRPC]
+    public void RPC_PlacePieceOnBoard(int viewID)
+    {
+        PhotonView pieceView = PhotonView.Find(viewID);
+        if (pieceView != null)
+        {
+            SetPosition(pieceView.gameObject);
+        }
+    }
+
+    // MultiGame.cs ï¿½ï¿½ ï¿½ß°ï¿½
+
+    [PunRPC]
+    public void RPC_StartFusionAnimation(int movingPieceID, int stationaryPieceID)
+    {
+        PhotonView movingView = PhotonView.Find(movingPieceID);
+        PhotonView stationaryView = PhotonView.Find(stationaryPieceID);
+
+        if (movingView != null && stationaryView != null)
+        {
+            // ï¿½ï¿½ï¿½ï¿½ï¿½Ì´ï¿½ ï¿½â¹°ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½â¹°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¶ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+            movingView.GetComponent<MultiChessMan>().StartFusionAnimationWith(stationaryView.gameObject);
+        }
+    }
+
+
+    //Update() ï¿½ï¿½ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½Æ¼ ï¿½Ìºï¿½Æ® ï¿½Þ¼Òµï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½É¶ï¿½ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½Ç´ï¿½ ï¿½Þ¼Òµï¿½ ï¿½Ô´Ï´ï¿½
+    //gameOverï¿½ï¿½ trueï¿½Ì°ï¿½ ï¿½ï¿½ï¿½ì½º ï¿½ï¿½Å¬ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¶ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
     public void Update()
     {
         if (gameOver == true && Input.GetMouseButtonDown(0))

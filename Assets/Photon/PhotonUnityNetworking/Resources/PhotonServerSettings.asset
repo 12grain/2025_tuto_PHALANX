@@ -63,6 +63,18 @@ MonoBehaviour:
   - ChangeTimeOwner
   - SyncTime
   - RPC_ChangeTimeOwner
+  - RequestEnterBastion
+  - RequestFusion
+  - RequestPromotion
+  - RPC_AnimateMove
+  - RPC_ConsumePhalanxShield
+  - RPC_ExecutePromotion
+  - RPC_PlacePieceOnBoard
+  - RPC_SetGarrisonStatus
+  - RPC_SetInteractionState
+  - RPC_SetShield
+  - RPC_SetVisible
+  - RPC_StartFusionAnimation
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

@@ -1,12 +1,15 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-
+using TMPro;
 namespace Photon.Pun.Demo.Asteroids
 {
     public class RoomListEntry : MonoBehaviour
     {
-        public Text RoomNameText;
+       
+        public Text RoomNameText; 
+        public TextMeshProUGUI RoomNameTextPro;
         public Text RoomPlayersText;
+        public TextMeshProUGUI RoomPlayersTextPro;
         public Button JoinRoomButton;
 
         private string roomName;
@@ -28,8 +31,10 @@ namespace Photon.Pun.Demo.Asteroids
         {
             roomName = name;
 
-            RoomNameText.text = name;
-            RoomPlayersText.text = currentPlayers + " / " + maxPlayers;
+    
+            RoomNameTextPro.text = roomName;    
+         
+            RoomPlayersTextPro.text = currentPlayers + " / " + maxPlayers;
         }
     }
 }
