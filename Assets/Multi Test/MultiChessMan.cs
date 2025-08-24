@@ -17,6 +17,8 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     private bool kingNeverMove = true;
     private bool rookNeverMove = true; // 룩을 위한 변수 추가
     private bool isGarrisoned = false;
+    private bool hasShield = false;
+    private bool phalanxShieldActive = true;
     private int garrisonedBastionID = -1;
 
 
@@ -37,6 +39,14 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     {
         return player;
     }
+
+    // MultiChessMan.cs 에 추가
+    public bool HasShield()
+    {
+        return this.hasShield;
+    }
+
+    // MultiGame.cs 에서는 capturedCm.hasShield 대신 capturedCm.HasShield() 를 사용
 
     // 이 킹이 움직인 적이 없는지 외부에서 확인할 수 있게 해주는 함수
     public bool GetKingNeverMove()
@@ -318,7 +328,7 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
                 }
                 else // 그 외는 합성
                 {
-                    gameController.GetComponent<PhotonView>().RPC("RequestFusion", RpcTarget.MasterClient, photonView.ViewID, targetID);
+                    gameController.GetComponent<PhotonView>().RPC("RPC_StartFusionAnimation", RpcTarget.All, photonView.ViewID, targetID);
                 }
             }
         }
@@ -401,6 +411,46 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
+    // 합성 애니메이션 코루틴
+    private IEnumerator AnimateFusion(GameObject otherPiece)
+    {
+        // 애니메이션이 진행되는 동안은 다른 입력을 막음
+        if (gameController != null)
+        {
+            gameController.isInteractionBlocked = true;
+        }
+
+        Vector3 startPosThis = this.transform.position;
+        Vector3 startPosOther = otherPiece.transform.position;
+        Vector3 targetPos = otherPiece.transform.position; // 재료가 되는 기물 위치로 모임
+
+        float elapsedTime = 0f;
+        float fusionAnimDuration = 0.5f; // 합성 애니메이션 시간
+
+        while (elapsedTime < fusionAnimDuration)
+        {
+            // 두 기물이 목표 위치로 점점 다가감
+            this.transform.position = Vector3.Lerp(startPosThis, targetPos, elapsedTime / fusionAnimDuration);
+            otherPiece.transform.position = Vector3.Lerp(startPosOther, targetPos, elapsedTime / fusionAnimDuration);
+
+            elapsedTime += Time.deltaTime;
+            yield return null; // 다음 프레임까지 대기
+        }
+
+        // 애니메이션이 끝난 후, 요청을 보냈던 클라이언트만 실제 합성을 요청함
+        if (photonView.IsMine)
+        {
+            int stationaryPieceID = otherPiece.GetComponent<PhotonView>().ViewID;
+            gameController.GetComponent<PhotonView>().RPC("RequestFusion", RpcTarget.MasterClient, photonView.ViewID, stationaryPieceID);
+        }
+    }
+
+    // 애니메이션을 시작시키는 공개 함수 (RPC로 호출될 예정)
+    public void StartFusionAnimationWith(GameObject otherPiece)
+    {
+        StartCoroutine(AnimateFusion(otherPiece));
+    }
+
 
     [PunRPC]
     public void DestroySelf()
@@ -422,6 +472,9 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
     public void InitiateMovePlates()
     {
+        // ▼▼▼ 함수 맨 위에 인접 합성 체크 로직을 추가합니다 ▼▼▼
+        CheckAdjacentFusions();
+
 
         // ▼▼▼ 함수 맨 위에 바스티온 버프 확인 로직을 추가합니다 ▼▼▼
         if (this.isGarrisoned)
@@ -524,20 +577,6 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
                 if (targetCm.player != this.player) // 적군이면 -> 공격
                 {
                     MovePlateAttackSpawn(x, y);
-                }
-                else // 아군이면
-                {
-                    // ▼▼▼ 여기에도 똑같이 추가합니다! ▼▼▼
-                    // 목표가 바스티온이면 '특수 이동' Plate 생성
-                    if (targetPiece.name.Contains("BASTION"))
-                    {
-                        MovePlateFusionSpawn(x, y);
-                    }
-                    // 그게 아니고, 합성이 가능한 조합이면 '특수 이동' Plate 생성
-                    else if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
-                    {
-                        MovePlateFusionSpawn(x, y);
-                    }
                 }
             }
         }
@@ -725,19 +764,7 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             if (targetCm.player != this.player) // 2-1. 적군이면 -> 공격
             {
                 MovePlateAttackSpawn(x, y);
-            }
-            else // 2-2. 아군이면 -> 합성 또는 바스티온 진입 체크
-            {
-                // ▼▼▼ 바스티온 진입 체크 추가 ▼▼▼
-                if (targetPiece.name.Contains("BASTION"))
-                {
-                    MovePlateFusionSpawn(x, y); // 초록색 Plate를 '특수 이동'용으로 사용
-                }
-                else if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
-                {
-                    MovePlateFusionSpawn(x, y);
-                }
-            }
+            }  
         }
     }
 
@@ -828,6 +855,24 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         mpScript.SetupVisuals(gameController, matrixX, matrixY);
     }
 
+
+    [PunRPC]
+    public void RPC_SetShield(bool status)
+    {
+        // 상태가 변경될 때만 로그를 출력하도록 함
+        if (this.hasShield != status)
+        {
+            this.hasShield = status;
+            if (status)
+            {
+                Debug.Log($"<color=cyan>{this.name} 보호막 생성!</color>");
+            }
+            else
+            {
+                Debug.Log($"<color=orange>{this.name} 보호막 파괴!</color>");
+            }
+        }
+    }
 
 
 
@@ -950,5 +995,55 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
         // 애니메이션이 끝난 후 정확한 위치에 고정
         transform.position = targetPosition;
+    }
+
+    // 기물 합성 로직
+
+    public void CheckAdjacentFusions()
+    {
+        if (gameController == null) return;
+
+        // 상하좌우 4방향 좌표
+        int[] xDirections = { 0, 0, 1, -1 };
+        int[] yDirections = { 1, -1, 0, 0 };
+
+        for (int i = 0; i < 4; i++)
+        {
+            int adjX = xBoard + xDirections[i];
+            int adjY = yBoard + yDirections[i];
+
+            if (gameController.PositionOnBoard(adjX, adjY))
+            {
+                GameObject targetPiece = gameController.GetPosition(adjX, adjY);
+                // 인접한 칸에 아군 기물이 있다면
+                if (targetPiece != null && targetPiece.GetComponent<MultiChessMan>().GetPlayer() == this.player)
+                {
+                    // '합성 레시피 북'을 확인해서 합성이 가능한지 알아본다
+                    if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
+                    {
+                        // 합성이 가능하면, 그 아군 기물 위치에 초록색 Plate를 생성
+                        MovePlateFusionSpawn(adjX, adjY);
+                    }
+                }
+            }
+        }
+    }
+
+    // 자신의 전방 보호막이 활성화 상태인지 외부에서 확인하는 함수
+    public bool HasPhalanxShield()
+    {
+        return this.phalanxShieldActive;
+    }
+
+    // 전방 보호막이 소모되었을 때 호출될 RPC
+    [PunRPC]
+    public void RPC_ConsumePhalanxShield()
+    {
+        if (this.phalanxShieldActive)
+        {
+            this.phalanxShieldActive = false;
+            // 그래픽이 없으므로, 대신 로그를 출력합니다.
+            Debug.Log($"<color=orange>{this.name}의 전방 보호막이 파괴되었습니다!</color>");
+        }
     }
 }

@@ -71,6 +71,8 @@ MonoBehaviour:
   - RPC_SetVisible
   - RequestEnterBastion
   - RPC_PlacePieceOnBoard
+  - RPC_SetShield
+  - RPC_ConsumePhalanxShield
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

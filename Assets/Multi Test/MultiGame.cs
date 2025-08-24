@@ -261,28 +261,62 @@ public class MultiGame : MonoBehaviourPunCallbacks
             attackerView.RPC("RPC_SetGarrisonStatus", RpcTarget.All, false, -1);
         }
 
-        // --- 일반 이동/캐슬링 처리 ---
         if (isCastle)
         {
             photonView.RPC("RPC_ExecuteCastling", RpcTarget.All, attackerID, targetX);
         }
         else
         {
-            if (capturedID != -1)
+            if (capturedID != -1) // 공격인 경우
             {
-                PhotonView.Find(capturedID)?.RPC("DestroySelf", RpcTarget.AllBuffered);
+                PhotonView capturedView = PhotonView.Find(capturedID);
+                if (capturedView != null)
+                {
+                    MultiChessMan capturedCm = capturedView.GetComponent<MultiChessMan>();
+
+                    // ▼▼▼ 팔랑크스 방어 로직을 여기에 추가합니다 ▼▼▼
+                    // 1. 공격받는 기물이 '팔랑크스'이고, '전방 보호막'이 활성화 상태인지 확인
+                    if (capturedCm.gameObject.name.Contains("PHALANX") && capturedCm.HasPhalanxShield())
+                    {
+                        // 2. 공격의 방향이 '전방'인지 확인 (같은 열에서 오는지)
+                        bool isSameFile = (attackerCm.GetXBoard() == capturedCm.GetXBoard());
+                        string phalanxColor = capturedCm.GetPlayer();
+                        int attackerY = attackerCm.GetYBoard();
+                        int phalanxY = capturedCm.GetYBoard();
+
+                        bool isFrontalAttack = (phalanxColor == "white" && attackerY > phalanxY) ||
+                                               (phalanxColor == "black" && attackerY < phalanxY);
+
+                        // 3. 만약 '같은 열에서 온 전방 공격'이 맞다면, 공격을 막고 보호막을 소모
+                        if (isSameFile && isFrontalAttack)
+                        {
+                            Debug.Log("팔랑크스가 전방 공격을 방어했습니다!");
+                            capturedView.RPC("RPC_ConsumePhalanxShield", RpcTarget.All);
+                            // 공격자는 이동하지 않고 턴만 넘어갑니다.
+                        }
+                        else // 전방 공격이 아니라면 (대각선, 측면, 후방)
+                        {
+                            // 보호막이 소용없으므로, 일반 기물처럼 그냥 잡힙니다.
+                            capturedView.RPC("DestroySelf", RpcTarget.AllBuffered);
+                            attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, true);
+                        }
+                    }
+                    // 4. 공격받는 기물이 팔랑크스가 아니거나, 보호막이 없을 경우
+                    else if (capturedCm.HasShield()) // 테스투도의 개인 보호막 확인
+                    {
+                        capturedView.RPC("RPC_SetShield", RpcTarget.All, false);
+                    }
+                    else // 아무 보호막도 없는 일반 기물
+                    {
+                        capturedView.RPC("DestroySelf", RpcTarget.AllBuffered);
+                        attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, true);
+                    }
+                }
             }
-
-            bool isCapture = (capturedID != -1);
-            attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, isCapture);
-        }
-
-        // ▼▼▼ 주둔 해제 후속 처리 ▼▼▼
-        // 만약 기물이 바스티온에서 떠난 것이었다면,
-        if (wasGarrisoned && bastionToReleaseID != -1)
-        {
-            // 모든 클라이언트에게 "그 자리에 바스티온을 다시 놓아라"고 명령
-            photonView.RPC("RPC_PlacePieceOnBoard", RpcTarget.All, bastionToReleaseID);
+            else // 공격이 아닌 일반 이동인 경우
+            {
+                attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, false);
+            }
         }
 
         attackerView.RPC("RPC_UpdateMovedStatus", RpcTarget.All);
@@ -544,7 +578,38 @@ public class MultiGame : MonoBehaviourPunCallbacks
         PhotonNetwork.Destroy(stationaryPiece);
 
         // 4. 새로운 합성 기물 생성
-        Create(newPieceName, targetX, targetY);
+        GameObject newPiece = Create(newPieceName, targetX, targetY);
+
+        // ▼▼▼ 테스투도의 광역 보호막 부여 로직 ▼▼▼
+        if (resultType == "TESTUDO" && newPiece != null)
+        {
+            Debug.Log("테스투도 생성! 주변에 보호막을 부여합니다.");
+            string ownerColor = newPiece.GetComponent<MultiChessMan>().GetPlayer();
+
+            // 주변 8칸을 모두 확인
+            for (int i = -1; i <= 1; i++)
+            {
+                for (int j = -1; j <= 1; j++)
+                {
+                    if (i == 0 && j == 0) continue; // 자기 자신은 제외
+
+                    int checkX = targetX + i;
+                    int checkY = targetY + j;
+
+                    if (PositionOnBoard(checkX, checkY))
+                    {
+                        GameObject pieceToShield = GetPosition(checkX, checkY);
+                        // 그곳에 기물이 있고, 그 기물이 '아군'일 경우
+                        if (pieceToShield != null && pieceToShield.GetComponent<MultiChessMan>().GetPlayer() == ownerColor)
+                        {
+                            // 보호막을 부여하라는 RPC를 보냄
+                            pieceToShield.GetComponent<PhotonView>().RPC("RPC_SetShield", RpcTarget.All, true);
+                        }
+                    }
+                }
+            }
+        }
+        photonView.RPC("RPC_SetInteractionState", RpcTarget.All, false);
 
         // 5. 턴 넘기기
         CallNextTurn();
@@ -562,7 +627,20 @@ public class MultiGame : MonoBehaviourPunCallbacks
         }
     }
 
+    // MultiGame.cs 에 추가
 
+    [PunRPC]
+    public void RPC_StartFusionAnimation(int movingPieceID, int stationaryPieceID)
+    {
+        PhotonView movingView = PhotonView.Find(movingPieceID);
+        PhotonView stationaryView = PhotonView.Find(stationaryPieceID);
+
+        if (movingView != null && stationaryView != null)
+        {
+            // 움직이는 기물에게, 가만히 있던 기물을 향해 애니메이션을 시작하라고 명령
+            movingView.GetComponent<MultiChessMan>().StartFusionAnimationWith(stationaryView.gameObject);
+        }
+    }
 
 
     //Update() 유니티에서 제공하는 유니티 이벤트 메소드로 프레임이 재생될때마다 호출되는 메소드 입니다
