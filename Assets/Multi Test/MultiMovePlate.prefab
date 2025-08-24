@@ -151,6 +151,7 @@ MonoBehaviour:
   isCastling: 0
   controller: {fileID: 0}
   attack: 0
+  fillRatio: 0.9
 --- !u!114 &2823766036912936368
 MonoBehaviour:
   m_ObjectHideFlags: 0

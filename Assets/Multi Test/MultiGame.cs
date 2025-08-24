@@ -392,16 +392,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
 
     //Update() ����Ƽ���� �����ϴ� ����Ƽ �̺�Ʈ �޼ҵ�� �������� ����ɶ����� ȣ��Ǵ� �޼ҵ� �Դϴ�
     //gameOver�� true�̰� ���콺 ��Ŭ�� �����϶� ������ ������մϴ�.
-    public void Update()
-    {
-        if (gameOver == true && Input.GetMouseButtonDown(0))
-        {
-            gameOver = false;
-
-            SceneManager.LoadScene("MultiTestGameScene");
-        }
-    }
-
+    
     public void Winner(string playerWinner)
     {
         GameObject.FindGameObjectWithTag("WinnerText").GetComponent<TextMeshProUGUI>().text = playerWinner + " is the winner";
