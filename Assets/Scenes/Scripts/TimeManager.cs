@@ -2,10 +2,9 @@ using UnityEngine.UI;
 using UnityEngine;
 using Photon.Pun;
 using TMPro;
+
 public class TimeManager : MonoBehaviourPun
 {
-    
-
     public float whiteFullTime = 300f;
     public float blackFullTime = 300f;
 
@@ -19,8 +18,8 @@ public class TimeManager : MonoBehaviourPun
     public GameObject WinPanel;
     public GameObject LosePanel;
 
-   // public TextMeshProUGUI whiteText;
-   // public TextMeshProUGUI blackText;
+    // public TextMeshProUGUI whiteText;
+    // public TextMeshProUGUI blackText;
 
     public bool isWhiteTurn = true;
 
@@ -29,6 +28,7 @@ public class TimeManager : MonoBehaviourPun
 
     public MultiGame multiGame;
 
+    private bool ended = false; // â˜… ì¤‘ë³µ í˜¸ì¶œ/í‘œì‹œ ë°©ì§€
 
     void Start()
     {
@@ -41,70 +41,62 @@ public class TimeManager : MonoBehaviourPun
         if (blackClockHand != null)
             blackStartRot = blackClockHand.transform.rotation;
 
-        WinPanel.SetActive(false);
-        LosePanel.SetActive(false);
+        if (WinPanel) WinPanel.SetActive(false);
+        if (LosePanel) LosePanel.SetActive(false);
     }
 
     void Update()
     {
-        // ¸¶½ºÅÍ Å¬¶óÀÌ¾ğÆ®¸¸ ½Ã°£ °è»ê
-        // if (!PhotonNetwork.IsMasterClient) return;
+        if (ended) return; // â˜… ì´ë¯¸ ê²Œì„ì˜¤ë²„ë©´ ë” ì´ìƒ ì²˜ë¦¬ ì•ˆ í•¨
 
-        if (whiteRemainTime < 0f)
-        {
-            if (PlayerPrefs.GetString("MyColor") == "white")
-            {
-                LosePanel.SetActive(true);
-            }
-            else
-            {
-                WinPanel.SetActive(true);
-            }
+        // í˜„ì¬ ëˆ„êµ¬ í„´ì¸ì§€
+        if (multiGame != null)
+            isWhiteTurn = (multiGame.GetCurrentPlayer() == "white");
 
-        }
-
-        if (blackRemainTime < 0f)
-        {
-            if (PlayerPrefs.GetString("MyColor") == "black")
-            {
-                LosePanel.SetActive(true);
-            }
-            else
-            {
-                WinPanel.SetActive(true);
-            }
-
-
-        }
-
-        if (multiGame.GetCurrentPlayer() == "white")
-        { isWhiteTurn = true; }
-        else { isWhiteTurn = false; }
-
+        // ë‚¨ì€ ì‹œê°„ ê°ì‚°
         if (isWhiteTurn && whiteRemainTime > 0f)
         {
             whiteRemainTime -= Time.deltaTime;
-            //photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
         }
         else if (!isWhiteTurn && blackRemainTime > 0f)
         {
             blackRemainTime -= Time.deltaTime;
-            //photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
         }
-        
 
-        // ¿¹½Ã: ½Ã°è ¹Ù´Ã È¸Àü (¼±ÅÃ»çÇ×)
+        // â˜… íƒ€ì„ì˜¤ë²„ íŒì •(ê°ì‚° í›„, í•œ ë²ˆë§Œ)
+        // ë‚´ ìƒ‰ì€ PlayerPrefs ëŒ€ì‹  multiGame ê¸°ì¤€ì„ ìš°ì„  ì‚¬ìš©
+        string myColor = (multiGame != null ? multiGame.GetMyPlayerColor() : PlayerPrefs.GetString("MyColor"));
+        if (!string.IsNullOrEmpty(myColor)) myColor = myColor.Trim().ToLowerInvariant();
+
+        if (!ended && whiteRemainTime <= 0f)
+        {
+            whiteRemainTime = 0f;
+            ended = true;
+
+            bool amWhite = (myColor == "white");
+            if (WinPanel)  WinPanel.SetActive(!amWhite); // ë°± ì‹œê°„ ì¢…ë£Œ â†’ ë°± íŒ¨ë°°, í‘ ìŠ¹ë¦¬
+            if (LosePanel) LosePanel.SetActive(amWhite);
+            return;
+        }
+
+        if (!ended && blackRemainTime <= 0f)
+        {
+            blackRemainTime = 0f;
+            ended = true;
+
+            bool amWhite = (myColor == "white");
+            if (WinPanel)  WinPanel.SetActive(amWhite);  // í‘ ì‹œê°„ ì¢…ë£Œ â†’ í‘ íŒ¨ë°°, ë°± ìŠ¹ë¦¬
+            if (LosePanel) LosePanel.SetActive(!amWhite);
+            return;
+        }
+
+        // ì‹œê³„ë°”ëŠ˜ íšŒì „(ì—°ì¶œ)
         UpdateClockHand();
 
-        //whiteText.text = "White : " + whiteRemainTime;
-       // blackText.text = "black : " + blackRemainTime;
-
-
-        //photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
-
-
-
+        // í•„ìš” ì‹œ ë™ê¸°í™” ì‚¬ìš©
+        // photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
     }
+
     public void RequestChangeTurn()
     {
         photonView.RPC("ChangeTimeOwner", RpcTarget.All);
@@ -113,17 +105,14 @@ public class TimeManager : MonoBehaviourPun
     [PunRPC]
     public void ChangeTimeOwner()
     {
-        //if (!PhotonNetwork.IsMasterClient) return; // ¸¶½ºÅÍ¸¸ º¯°æ °¡´É
         isWhiteTurn = !isWhiteTurn;
-
-        // ÅÏ º¯°æ ÈÄ ½Ã°£µµ µ¿±âÈ­
         photonView.RPC("SyncTime", RpcTarget.All, whiteRemainTime, blackRemainTime, isWhiteTurn);
     }
-
 
     [PunRPC]
     public void SyncTime(float whiteTime, float blackTime, bool whiteTurn)
     {
+        if (ended) return; // â˜… ì¢…ë£Œ í›„ ë™ê¸°í™”ë¡œ ë®ì–´ì“°ì§€ ì•ŠìŒ
         whiteRemainTime = whiteTime;
         blackRemainTime = blackTime;
         isWhiteTurn = whiteTurn;
@@ -133,17 +122,16 @@ public class TimeManager : MonoBehaviourPun
     {
         if (whiteClockHand != null)
         {
-            float whitePercent = whiteRemainTime / whiteFullTime;
-            float rotationAmount = -360f * (1 - whitePercent); // ¡ç À½¼ö·Î º¯°æ
+            float whitePercent = Mathf.Clamp01(whiteRemainTime / whiteFullTime); // â˜… ì•ˆì „ í´ë¨í”„
+            float rotationAmount = -360f * (1 - whitePercent);
             whiteClockHand.transform.rotation = whiteStartRot * Quaternion.Euler(0, 0, rotationAmount);
         }
 
         if (blackClockHand != null)
         {
-            float blackPercent = blackRemainTime / blackFullTime;
-            float rotationAmount = -360f * (1 - blackPercent); // ¡ç À½¼ö·Î º¯°æ
+            float blackPercent = Mathf.Clamp01(blackRemainTime / blackFullTime); // â˜… ì•ˆì „ í´ë¨í”„
+            float rotationAmount = -360f * (1 - blackPercent);
             blackClockHand.transform.rotation = blackStartRot * Quaternion.Euler(0, 0, rotationAmount);
         }
     }
 }
-
