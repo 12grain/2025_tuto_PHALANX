@@ -75,7 +75,15 @@ public class TimeManager : MonoBehaviourPun
 
             bool amWhite = (myColor == "white");
             if (WinPanel)  WinPanel.SetActive(!amWhite); // 백 시간 종료 → 백 패배, 흑 승리
-            if (LosePanel) LosePanel.SetActive(amWhite);
+            if (LosePanel) LosePanel.SetActive(amWhite);// 승/패 패널 켠 직후
+           
+            if (multiGame) multiGame.enabled = false;   // ← 게임씬에서 재시작/재로드 막기
+            Time.timeScale = 1f;                         // 혹시 멈춰있으면 복구
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+
+
+
             return;
         }
 
@@ -87,6 +95,13 @@ public class TimeManager : MonoBehaviourPun
             bool amWhite = (myColor == "white");
             if (WinPanel)  WinPanel.SetActive(amWhite);  // 흑 시간 종료 → 흑 패배, 백 승리
             if (LosePanel) LosePanel.SetActive(!amWhite);
+
+            if (multiGame) multiGame.enabled = false;   // ← 게임씬에서 재시작/재로드 막기
+            Time.timeScale = 1f;                         // 혹시 멈춰있으면 복구
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+
+            
             return;
         }
 
