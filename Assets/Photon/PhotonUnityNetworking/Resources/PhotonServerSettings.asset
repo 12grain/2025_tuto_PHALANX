@@ -73,6 +73,7 @@ MonoBehaviour:
   - RPC_PlacePieceOnBoard
   - RPC_SetShield
   - RPC_ConsumePhalanxShield
+  - RPC_StartFusionAnimation
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
