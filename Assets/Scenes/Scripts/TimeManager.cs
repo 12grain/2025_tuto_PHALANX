@@ -2,10 +2,9 @@ using UnityEngine.UI;
 using UnityEngine;
 using Photon.Pun;
 using TMPro;
+
 public class TimeManager : MonoBehaviourPun
 {
-    
-
     public float whiteFullTime = 300f;
     public float blackFullTime = 300f;
 
@@ -19,8 +18,8 @@ public class TimeManager : MonoBehaviourPun
     public GameObject WinPanel;
     public GameObject LosePanel;
 
-   // public TextMeshProUGUI whiteText;
-   // public TextMeshProUGUI blackText;
+    // public TextMeshProUGUI whiteText;
+    // public TextMeshProUGUI blackText;
 
     public bool isWhiteTurn = true;
 
@@ -29,6 +28,7 @@ public class TimeManager : MonoBehaviourPun
 
     public MultiGame multiGame;
 
+    private bool ended = false; // ★ 중복 호출/표시 방지
 
     void Start()
     {
@@ -41,70 +41,77 @@ public class TimeManager : MonoBehaviourPun
         if (blackClockHand != null)
             blackStartRot = blackClockHand.transform.rotation;
 
-        WinPanel.SetActive(false);
-        LosePanel.SetActive(false);
+        if (WinPanel) WinPanel.SetActive(false);
+        if (LosePanel) LosePanel.SetActive(false);
     }
 
     void Update()
     {
-        // ������ Ŭ���̾�Ʈ�� �ð� ���
-        // if (!PhotonNetwork.IsMasterClient) return;
+        if (ended) return; // ★ 이미 게임오버면 더 이상 처리 안 함
 
-        if (whiteRemainTime < 0f)
-        {
-            if (PlayerPrefs.GetString("MyColor") == "white")
-            {
-                LosePanel.SetActive(true);
-            }
-            else
-            {
-                WinPanel.SetActive(true);
-            }
+        // 현재 누구 턴인지
+        if (multiGame != null)
+            isWhiteTurn = (multiGame.GetCurrentPlayer() == "white");
 
-        }
-
-        if (blackRemainTime < 0f)
-        {
-            if (PlayerPrefs.GetString("MyColor") == "black")
-            {
-                LosePanel.SetActive(true);
-            }
-            else
-            {
-                WinPanel.SetActive(true);
-            }
-
-
-        }
-
-        if (multiGame.GetCurrentPlayer() == "white")
-        { isWhiteTurn = true; }
-        else { isWhiteTurn = false; }
-
+        // 남은 시간 감산
         if (isWhiteTurn && whiteRemainTime > 0f)
         {
             whiteRemainTime -= Time.deltaTime;
-            //photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
         }
         else if (!isWhiteTurn && blackRemainTime > 0f)
         {
             blackRemainTime -= Time.deltaTime;
-            //photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
         }
-        
 
-        // ����: �ð� �ٴ� ȸ�� (���û���)
+        // ★ 타임오버 판정(감산 후, 한 번만)
+        // 내 색은 PlayerPrefs 대신 multiGame 기준을 우선 사용
+        string myColor = (multiGame != null ? multiGame.GetMyPlayerColor() : PlayerPrefs.GetString("MyColor"));
+        if (!string.IsNullOrEmpty(myColor)) myColor = myColor.Trim().ToLowerInvariant();
+
+        if (!ended && whiteRemainTime <= 0f)
+        {
+            whiteRemainTime = 0f;
+            ended = true;
+
+            bool amWhite = (myColor == "white");
+            if (WinPanel)  WinPanel.SetActive(!amWhite); // 백 시간 종료 → 백 패배, 흑 승리
+            if (LosePanel) LosePanel.SetActive(amWhite);// 승/패 패널 켠 직후
+           
+            if (multiGame) multiGame.enabled = false;   // ← 게임씬에서 재시작/재로드 막기
+            Time.timeScale = 1f;                         // 혹시 멈춰있으면 복구
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+
+
+
+            return;
+        }
+
+        if (!ended && blackRemainTime <= 0f)
+        {
+            blackRemainTime = 0f;
+            ended = true;
+
+            bool amWhite = (myColor == "white");
+            if (WinPanel)  WinPanel.SetActive(amWhite);  // 흑 시간 종료 → 흑 패배, 백 승리
+            if (LosePanel) LosePanel.SetActive(!amWhite);
+
+            if (multiGame) multiGame.enabled = false;   // ← 게임씬에서 재시작/재로드 막기
+            Time.timeScale = 1f;                         // 혹시 멈춰있으면 복구
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+
+            
+            return;
+        }
+
+        // 시계바늘 회전(연출)
         UpdateClockHand();
 
-        //whiteText.text = "White : " + whiteRemainTime;
-       // blackText.text = "black : " + blackRemainTime;
-
-
-        //photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
-
-
-
+        // 필요 시 동기화 사용
+        // photonView.RPC("SyncTime", RpcTarget.Others, whiteRemainTime, blackRemainTime, isWhiteTurn);
     }
+
     public void RequestChangeTurn()
     {
         photonView.RPC("ChangeTimeOwner", RpcTarget.All);
@@ -113,17 +120,14 @@ public class TimeManager : MonoBehaviourPun
     [PunRPC]
     public void ChangeTimeOwner()
     {
-        //if (!PhotonNetwork.IsMasterClient) return; // �����͸� ���� ����
         isWhiteTurn = !isWhiteTurn;
-
-        // �� ���� �� �ð��� ����ȭ
         photonView.RPC("SyncTime", RpcTarget.All, whiteRemainTime, blackRemainTime, isWhiteTurn);
     }
-
 
     [PunRPC]
     public void SyncTime(float whiteTime, float blackTime, bool whiteTurn)
     {
+        if (ended) return; // ★ 종료 후 동기화로 덮어쓰지 않음
         whiteRemainTime = whiteTime;
         blackRemainTime = blackTime;
         isWhiteTurn = whiteTurn;
@@ -133,17 +137,16 @@ public class TimeManager : MonoBehaviourPun
     {
         if (whiteClockHand != null)
         {
-            float whitePercent = whiteRemainTime / whiteFullTime;
-            float rotationAmount = -360f * (1 - whitePercent); // �� ������ ����
+            float whitePercent = Mathf.Clamp01(whiteRemainTime / whiteFullTime); // ★ 안전 클램프
+            float rotationAmount = -360f * (1 - whitePercent);
             whiteClockHand.transform.rotation = whiteStartRot * Quaternion.Euler(0, 0, rotationAmount);
         }
 
         if (blackClockHand != null)
         {
-            float blackPercent = blackRemainTime / blackFullTime;
-            float rotationAmount = -360f * (1 - blackPercent); // �� ������ ����
+            float blackPercent = Mathf.Clamp01(blackRemainTime / blackFullTime); // ★ 안전 클램프
+            float rotationAmount = -360f * (1 - blackPercent);
             blackClockHand.transform.rotation = blackStartRot * Quaternion.Euler(0, 0, rotationAmount);
         }
     }
 }
-
