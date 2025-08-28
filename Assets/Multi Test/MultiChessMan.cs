@@ -94,6 +94,7 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     public void RPC_SetGarrisonStatus(bool status, int bastionID)
     {
+        Debug.Log($"<color=magenta>RPC_SetGarrisonStatus 수신! {this.name}의 상태를 {status}로 변경합니다.</color>");
         this.isGarrisoned = status;
         this.garrisonedBastionID = bastionID;
 
@@ -122,6 +123,17 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     public void RPC_SetVisible(bool isVisible)
     {
         this.gameObject.SetActive(isVisible);
+
+        // ▼▼▼ 이 로직을 여기에 추가하세요! ▼▼▼
+        if (isVisible)
+        {
+            // gameController는 Awake()에서 이미 찾아두었으므로 바로 사용 가능합니다.
+            if (gameController != null)
+            {
+                // 모든 클라이언트가 각자 자신의 positions 배열에 위치를 등록합니다.
+                gameController.SetPosition(this.gameObject);
+            }
+        }
     }
 
     // References for all the sptrites that the chesspiece can be
@@ -402,17 +414,16 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     // MultiChessMan.cs
 
     [PunRPC]
-    public void RPC_AnimateMove(int targetX, int targetY, bool isCapture)
+    public void RPC_AnimateMove(int targetX, int targetY, bool isCapture, bool didLeaveGarrison)
     {
         if (!isCapture)
         {
             SoundManager.Instance.PlayMoveSound();
         }
 
-        // ▼▼▼ "SetPositionEmpty" 코드를 다시 추가합니다! ▼▼▼
-        if (gameController != null)
+        if (gameController != null && !didLeaveGarrison)
         {
-            // 모든 클라이언트가 자신의 지도에서 나의 옛날 자리를 비운다.
+            // 주둔지에서 나온 것이 아닐 때만 이전 위치를 비웁니다.
             gameController.SetPositionEmpty(this.xBoard, this.yBoard);
         }
 
@@ -502,7 +513,9 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     public void InitiateMovePlates()
     {
         if (this.isGarrisoned)
-        {                
+        {
+            // ▼▼▼ 진단 코드 1번 ▼▼▼
+            Debug.Log($"<color=yellow>InitiateMovePlates: 내 이름은 {this.name}, isGarrisoned 상태 = {this.isGarrisoned}</color>");
 
             // 만약 주둔 상태라면, 다른 모든 움직임은 무시하고 오직 룩처럼만 움직인다.
             Debug.Log(this.name + "가 바스티온에 주둔 중: 룩처럼 움직입니다!");
@@ -608,6 +621,8 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
                 }
                 else // 아군이면
                 {
+
+                    Debug.Log($"<color=cyan>아군 발견: {targetPiece.name}</color>");
                     if (targetPiece.name.Contains("BASTION"))
                     {
                         MovePlateFusionSpawn(x, y);
@@ -778,30 +793,49 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
     public void PointMovePlate(int x, int y)
     {
+        // 1. 함수 시작과 목표 좌표 로그
+        Debug.Log($"--- PointMovePlate: Checking square ({x}, {y}) ---");
+
         if (gameController == null) return;
         if (!gameController.PositionOnBoard(x, y)) return;
 
+        // 2. 목표 지점에 어떤 기물이 있는지 확인 후 로그
         GameObject targetPiece = gameController.GetPosition(x, y);
-
-        if (targetPiece == null) // 1. 칸이 비었으면 -> 일반 이동
+        if (targetPiece == null)
         {
+            Debug.Log($"<color=yellow>Result: Square ({x}, {y}) is EMPTY.</color>");
+        }
+        else
+        {
+            Debug.Log($"<color=cyan>Result: Found piece '{targetPiece.name}' on square ({x}, {y}).</color>");
+        }
+
+        // 3. 기존 로직에 상세 로그 추가
+        if (targetPiece == null) // 칸이 비었으면
+        {
+            Debug.Log("Action: Spawning a NORMAL move plate.");
             MovePlateSpawn(x, y);
         }
-        else // 2. 칸에 기물이 있으면
+        else // 칸에 기물이 있으면
         {
             MultiChessMan targetCm = targetPiece.GetComponent<MultiChessMan>();
-            if (targetCm.player != this.player) // 2-1. 적군이면 -> 공격
+            if (targetCm.player != this.player) // 적군이면
             {
+                Debug.Log("Action: Spawning an ATTACK plate.");
                 MovePlateAttackSpawn(x, y);
             }
-            else // 2-2. 아군이면
+            else // 아군이면
             {
-                // 목표가 바스티온이면 '특수 이동(주둔)' Plate 생성
+                Debug.Log($"Action: It's a FRIENDLY piece. Checking if it's a Bastion...");
                 if (targetPiece.name.Contains("BASTION"))
                 {
-                    MovePlateFusionSpawn(x, y); // 초록색 Plate를 '특수 이동'용으로 사용
+                    Debug.Log("<color=green>...YES, it's a Bastion. Spawning FUSION/GARRISON plate.</color>");
+                    MovePlateFusionSpawn(x, y);
                 }
-                // 그 외 아군은 그냥 길을 막는 장애물로 취급
+                else
+                {
+                    Debug.Log("<color=red>...NO, it's not a Bastion. This path is blocked. No plate will be spawned.</color>");
+                }
             }
         }
     }
@@ -1107,6 +1141,7 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             }
         }
     }
+
 
 
 

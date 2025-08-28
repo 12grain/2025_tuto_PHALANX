@@ -305,6 +305,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         if (attackerView == null) return;
         MultiChessMan attackerCm = attackerView.GetComponent<MultiChessMan>();
 
+        bool wasGarrisoned = attackerCm.IsGarrisoned();
 
         if (attackerCm.IsGarrisoned())
         {            
@@ -314,7 +315,6 @@ public class MultiGame : MonoBehaviourPunCallbacks
             if (bastionView != null)
             {
                 bastionView.RPC("RPC_SetVisible", RpcTarget.All, true);
-                SetPosition(bastionView.gameObject);              
             }
 
             attackerView.RPC("RPC_SetGarrisonStatus", RpcTarget.All, false, -1);
@@ -371,13 +371,13 @@ public class MultiGame : MonoBehaviourPunCallbacks
                 else
                 {
                     capturedView.RPC("DestroySelf", RpcTarget.AllBuffered);
-                    attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, true);
+                    attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, true, wasGarrisoned);
                 }
             }
         }
         else // ������ �ƴ� �Ϲ� �̵��� ���
             {
-                attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, false);
+                attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, false, wasGarrisoned);
             }
         attackerView.RPC("RPC_UpdateMovedStatus", RpcTarget.All);
         CallNextTurn();
@@ -452,7 +452,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
 
         SetPositionEmpty(startKingX, y);
 
-        kingObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, kingTargetX, y, false);         
+        kingObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, kingTargetX, y, false, false);         
 
         SetPosition(kingObj);
 
@@ -465,7 +465,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
             MultiChessMan rookCm = rookObj.GetComponent<MultiChessMan>();
             SetPositionEmpty(rookStartX, y);
 
-            rookObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, rookTargetX, y, false);
+            rookObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, rookTargetX, y, false, false);
 
             SetPosition(rookObj);
         }
@@ -522,7 +522,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
             bool isCapture = (capturedID != -1);
 
             // AnimateMove�� ȣ���� �� isCapture ���� �״�� �����մϴ�.
-            newPiece.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, isCapture);
+            newPiece.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, isCapture, false);
         }
 
         // 5. ���θ���� �������� ��ȣ�ۿ��� �ٽ� ���
@@ -564,7 +564,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         movingPieceView.RPC("RPC_SetGarrisonStatus", RpcTarget.All, true, bastionID);
 
         // 4. ������ �⹰�� �ִϸ��̼ǰ� �Բ� �ٽ�Ƽ���� ��ġ�� �̵���Ŵ
-        movingPieceView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, false);
+        movingPieceView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, false, false);
 
         // 5. ���� �ѱ�
         CallNextTurn();
