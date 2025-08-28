@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public class PromotionManager : MonoBehaviourPunCallbacks
 {
-    public static PromotionManager Instance; // �ٸ� ��ũ��Ʈ���� ���� �����ϱ� ���� static instance
+    public static PromotionManager Instance; 
 
     [Header("UI Elements")]
     public GameObject promotionPanel;
@@ -12,7 +12,6 @@ public class PromotionManager : MonoBehaviourPunCallbacks
 
     private MultiGame gameController;
 
-    // ���θ���� ���� �ӽ÷� �����ؾ� �� ������
     private MultiChessMan pawnToPromote;
     private int targetX;
     private int targetY;
@@ -21,7 +20,7 @@ public class PromotionManager : MonoBehaviourPunCallbacks
 
     void Awake()
     {
-        Instance = this; // �ڱ� �ڽ��� static instance�� ���
+        Instance = this; 
         promotionPanel.SetActive(false);
         gameController = GameObject.FindGameObjectWithTag("GameController").GetComponent<MultiGame>();
     }

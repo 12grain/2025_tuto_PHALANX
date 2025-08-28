@@ -173,6 +173,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   controller: {fileID: 0}
   movePlate: {fileID: 496619246893154284, guid: 764539a881b6c7c4d8997736aa6a6064, type: 3}
+  garrisonIndicatorPrefab: {fileID: 6887184233964558930, guid: 60b5dda14d2539b45b705f168a87e1f8, type: 3}
+  shieldIndicatorPrefab: {fileID: 7181126500649401870, guid: 45870782c06e35a46b7c20afcfa4c089, type: 3}
+  phalanxShieldIndicatorPrefab: {fileID: 7181126500649401870, guid: 45870782c06e35a46b7c20afcfa4c089, type: 3}
   moveDuration: 0.3
   hopHeight: 0.5
   black_queenP: {fileID: 6645289695748201938, guid: 90dc818adf9534048b0a22f4b910c0ef, type: 3}

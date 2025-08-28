@@ -75,6 +75,8 @@ MonoBehaviour:
   - RPC_SetShield
   - RPC_SetVisible
   - RPC_StartFusionAnimation
+  - RPC_EndGame
+  - RPC_UpdateBoardAndAnimate
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

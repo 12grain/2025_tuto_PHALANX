@@ -11,6 +11,9 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     public GameObject controller;
     private MultiGame gameController; // 스크립트 참조를 저장할 변수
     public GameObject movePlate;
+    public GameObject garrisonIndicatorPrefab;
+    public GameObject shieldIndicatorPrefab;
+    public GameObject phalanxShieldIndicatorPrefab; // ▼▼▼ 팔랑크스용 표시기 프리팹 변수 추가 ▼▼▼
 
     //폰이 안움직일 경우 두 칸 이동할 수 있도록 하는 부울 변수
     private bool pawnNeverMove = true;
@@ -20,6 +23,11 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     private bool hasShield = false;
     private bool phalanxShieldActive = true;
     private int garrisonedBastionID = -1;
+    private GameObject phalanxShieldIndicatorInstance; // ▼▼▼ 팔랑크스 표시기 인스턴스를 저장할 변수
+
+    private GameObject shieldIndicatorInstance; // ▼▼▼ 생성된 보호막 표시기 인스턴스를 저장할 변수
+
+    private GameObject garrisonIndicatorInstance;
 
 
     // 0~7 체스판 좌표
@@ -88,8 +96,27 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     {
         this.isGarrisoned = status;
         this.garrisonedBastionID = bastionID;
-    }
 
+        if (status == true) // 주둔 상태가 '시작'될 때
+        {
+            if (garrisonIndicatorPrefab != null && garrisonIndicatorInstance == null)
+            {
+                // 1. 표시기를 생성하고, 이 기물의 자식으로 만듭니다.
+                garrisonIndicatorInstance = Instantiate(garrisonIndicatorPrefab, transform.position, Quaternion.identity);
+                garrisonIndicatorInstance.transform.SetParent(this.transform, true);
+
+                // 2. 생성된 표시기의 로컬 스케일(크기)을 직접 설정합니다.
+                garrisonIndicatorInstance.transform.localScale = new Vector3(0.12f, 0.12f, 1f);
+            }
+        }
+        else // 주둔 상태가 '해제'될 때
+        {
+            if (garrisonIndicatorInstance != null)
+            {
+                Destroy(garrisonIndicatorInstance);
+            }
+        }
+    }
     // 바스티온 전용: 자신을 숨기거나 나타나게 하는 RPC
     [PunRPC]
     public void RPC_SetVisible(bool isVisible)
@@ -159,6 +186,16 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
         // take the instantiated location and adjust the transform
         SetCoords();
+
+        if (this.name.Contains("PHALANX"))
+        {
+            if (phalanxShieldIndicatorPrefab != null && phalanxShieldIndicatorInstance == null)
+            {
+                phalanxShieldIndicatorInstance = Instantiate(phalanxShieldIndicatorPrefab, transform.position, Quaternion.identity);
+                phalanxShieldIndicatorInstance.transform.SetParent(this.transform, true);
+                phalanxShieldIndicatorInstance.transform.localScale = new Vector3(0.1f, 0.1f, 1f);
+            }
+        }
 
         switch (this.name)
         {
@@ -315,33 +352,27 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (gameController == null) return;
 
-        // 특수 이동(합성 또는 바스티온 진입) 처리
         if (isSpecialMove)
         {
             GameObject targetPiece = gameController.GetPosition(targetX, targetY);
             if (targetPiece != null)
             {
                 int targetID = targetPiece.GetComponent<PhotonView>().ViewID;
-                if (targetPiece.name.Contains("BASTION")) // 목표가 바스티온이면
+                if (targetPiece.name.Contains("BASTION"))
                 {
                     gameController.GetComponent<PhotonView>().RPC("RequestEnterBastion", RpcTarget.MasterClient, photonView.ViewID, targetID);
                 }
-                else // 그 외는 합성
+                else
                 {
                     gameController.GetComponent<PhotonView>().RPC("RPC_StartFusionAnimation", RpcTarget.All, photonView.ViewID, targetID);
                 }
             }
         }
-        // ▼▼▼ "만약 합성이 아니라면" 이라는 'else if'로 묶어줍니다 ▼▼▼
         else
         {
-            // 2. 프로모션 조건인지 정확하게 확인
-            bool isPromotion = (this.name.Contains("pawn") &&
-                               ((player == "white" && targetY == 7) || (player == "black" && targetY == 0)));
-
+            bool isPromotion = (this.name.Contains("pawn") && ((player == "white" && targetY == 7) || (player == "black" && targetY == 0)));
             if (isPromotion)
             {
-                // 3. 프로모션인 경우
                 int capturedID = -1;
                 if (isAttack)
                 {
@@ -352,22 +383,21 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             }
             else
             {
-                // 4. 그 외 모든 일반 이동/캐슬링인 경우
                 int capturedID = -1;
                 if (isAttack)
                 {
                     GameObject capturedPiece = gameController.GetPosition(targetX, targetY);
                     if (capturedPiece != null) capturedID = capturedPiece.GetComponent<PhotonView>().ViewID;
                 }
-                gameController.GetComponent<PhotonView>().RPC("RequestMovePiece", RpcTarget.MasterClient,
-                    photonView.ViewID, targetX, targetY, capturedID, isCastle);
+                gameController.GetComponent<PhotonView>().RPC("RequestMovePiece", RpcTarget.MasterClient, photonView.ViewID, targetX, targetY, capturedID, isCastle);
             }
         }
-
         DestroyMovePlates();
     }
 
 
+
+    // MultiChessMan.cs
 
     // MultiChessMan.cs
 
@@ -410,7 +440,6 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             StartCoroutine(AnimateSlide(targetPosition));
         }
     }
-
     // 합성 애니메이션 코루틴
     private IEnumerator AnimateFusion(GameObject otherPiece)
     {
@@ -472,13 +501,9 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
 
     public void InitiateMovePlates()
     {
-        // ▼▼▼ 함수 맨 위에 인접 합성 체크 로직을 추가합니다 ▼▼▼
-        CheckAdjacentFusions();
-
-
-        // ▼▼▼ 함수 맨 위에 바스티온 버프 확인 로직을 추가합니다 ▼▼▼
         if (this.isGarrisoned)
-        {
+        {                
+
             // 만약 주둔 상태라면, 다른 모든 움직임은 무시하고 오직 룩처럼만 움직인다.
             Debug.Log(this.name + "가 바스티온에 주둔 중: 룩처럼 움직입니다!");
             LineMovePlate(1, 0);
@@ -487,67 +512,70 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             LineMovePlate(0, -1);
             return; // 여기서 함수를 끝내서, 아래의 switch문이 실행되지 않도록 함
         }
-        switch (this.name)
-        {
-            case "black_queen":
-            case "white_queen":
-                LineMovePlate(1, 0);
-                LineMovePlate(0, 1);
-                LineMovePlate(1, 1);
-                LineMovePlate(-1, 0);
-                LineMovePlate(0, -1);
-                LineMovePlate(-1, -1);
-                LineMovePlate(1, -1);
-                LineMovePlate(-1, 1);
-                break;
-            case "black_knight":
-            case "white_knight":
-                LMovePlate();
-                break;
-            case "black_bishop":
-            case "white_bishop":
-                LineMovePlate(1, 1);
-                LineMovePlate(1, -1);
-                LineMovePlate(-1, 1);
-                LineMovePlate(-1, -1);
-                break;
-            case "black_king":
-            case "white_king":
-                SurroundMovePlate();
-                CastleingMovePlate();
-                break;
-            case "black_rook":
-            case "white_rook":
-                LineMovePlate(1, 0);
-                LineMovePlate(0, 1);
-                LineMovePlate(-1, 0);
-                LineMovePlate(0, -1);
-                break;
-            case "black_pawn":
-                PawnMovePlate(xBoard, yBoard - 1);
-                break;
-            case "white_pawn":
-                PawnMovePlate(xBoard, yBoard + 1);
-                break;
-            // ▼▼▼ 새로운 기물들의 case 추가 ▼▼▼
-            case "white_PHALANX":
-            case "black_PHALANX":
-                PhalanxMovePlate();
-                break;
-            case "white_BASTION":
-            case "black_BASTION":
-                break;
-            case "white_TESTUDO":
-            case "black_TESTUDO":
-                SurroundMovePlate();
-                break;
-            case "black_CHEVALIER":
-            case "white_CHEVALIER":
-                ChevalierMovePlate();
-                break;
-
+        else {
+            CheckAdjacentFusions();
+            switch (this.name)
+            {
+                case "black_queen":
+                case "white_queen":
+                    LineMovePlate(1, 0);
+                    LineMovePlate(0, 1);
+                    LineMovePlate(1, 1);
+                    LineMovePlate(-1, 0);
+                    LineMovePlate(0, -1);
+                    LineMovePlate(-1, -1);
+                    LineMovePlate(1, -1);
+                    LineMovePlate(-1, 1);
+                    break;
+                case "black_knight":
+                case "white_knight":
+                    LMovePlate();
+                    break;
+                case "black_bishop":
+                case "white_bishop":
+                    LineMovePlate(1, 1);
+                    LineMovePlate(1, -1);
+                    LineMovePlate(-1, 1);
+                    LineMovePlate(-1, -1);
+                    break;
+                case "black_king":
+                case "white_king":
+                    SurroundMovePlate();
+                    CastleingMovePlate();
+                    break;
+                case "black_rook":
+                case "white_rook":
+                    LineMovePlate(1, 0);
+                    LineMovePlate(0, 1);
+                    LineMovePlate(-1, 0);
+                    LineMovePlate(0, -1);
+                    break;
+                case "black_pawn":
+                    PawnMovePlate(xBoard, yBoard - 1);
+                    break;
+                case "white_pawn":
+                    PawnMovePlate(xBoard, yBoard + 1);
+                    break;
+                // ▼▼▼ 새로운 기물들의 case 추가 ▼▼▼
+                case "white_PHALANX":
+                case "black_PHALANX":
+                    PhalanxMovePlate();
+                    break;
+                case "white_BASTION":
+                case "black_BASTION":
+                    break;
+                case "white_TESTUDO":
+                case "black_TESTUDO":
+                    SurroundMovePlate();
+                    break;
+                case "black_CHEVALIER":
+                case "white_CHEVALIER":
+                    ChevalierMovePlate();
+                    break;
+            }
 
         }
+            
     }
 
     // *** “LineMovePlate” : xIncrement, yIncrement 방향으로
@@ -577,6 +605,13 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
                 if (targetCm.player != this.player) // 적군이면 -> 공격
                 {
                     MovePlateAttackSpawn(x, y);
+                }
+                else // 아군이면
+                {
+                    if (targetPiece.name.Contains("BASTION"))
+                    {
+                        MovePlateFusionSpawn(x, y);
+                    }
                 }
             }
         }
@@ -665,37 +700,33 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
-    // MultiChessMan.cs
-
-    // MultiChessMan.cs
 
     public void ChevalierMovePlate()
     {
         if (gameController == null) return;
 
-        // 4개의 직선 방향 (상, 하, 좌, 우)
         int[] xDirections = { 0, 0, 1, -1 };
         int[] yDirections = { 1, -1, 0, 0 };
 
         for (int i = 0; i < 4; i++)
         {
-            // --- 일반 이동 (1칸 & 2칸, 경로 확인 필요) ---
+            // --- 일반 이동 및 1칸/2칸 공격 ---
             int x1 = xBoard + xDirections[i];
             int y1 = yBoard + yDirections[i];
 
             if (gameController.PositionOnBoard(x1, y1))
             {
-                // 1칸 앞을 PointMovePlate로 확인 (비었는지, 적인지, 아군인지 알아서 판단)
+                // 1칸 앞을 PointMovePlate로 확인 (비었으면 이동, 적이면 공격)
                 PointMovePlate(x1, y1);
 
-                // 2칸 앞은 1칸 앞이 비어있을 때만 갈 수 있음
+                // 1칸 앞이 '비어있을' 때만 2칸 앞을 추가로 확인
                 if (gameController.GetPosition(x1, y1) == null)
                 {
                     int x2 = xBoard + xDirections[i] * 2;
                     int y2 = yBoard + yDirections[i] * 2;
                     if (gameController.PositionOnBoard(x2, y2))
                     {
-                        // 2칸 앞도 PointMovePlate로 확인
+                        // 2칸 앞도 PointMovePlate로 확인 (비었으면 이동, 적이면 공격)
                         PointMovePlate(x2, y2);
                     }
                 }
@@ -708,14 +739,13 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             if (gameController.PositionOnBoard(x3, y3))
             {
                 GameObject pieceAt3 = gameController.GetPosition(x3, y3);
-                if (pieceAt3 != null && pieceAt3.GetComponent<MultiChessMan>().player != this.player)
+                if (pieceAt3 != null && pieceAt3.GetComponent<MultiChessMan>().GetPlayer() != this.player)
                 {
                     MovePlateAttackSpawn(x3, y3);
                 }
             }
         }
     }
-
     // MultiChessMan.cs
 
     private void CastlingPlateSpawn(int targetX, int targetY)
@@ -745,7 +775,6 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     }
 
 
-    // MultiChessMan.cs
 
     public void PointMovePlate(int x, int y)
     {
@@ -765,8 +794,18 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
             {
                 MovePlateAttackSpawn(x, y);
             }
+            else // 2-2. 아군이면
+            {
+                // 목표가 바스티온이면 '특수 이동(주둔)' Plate 생성
+                if (targetPiece.name.Contains("BASTION"))
+                {
+                    MovePlateFusionSpawn(x, y); // 초록색 Plate를 '특수 이동'용으로 사용
+                }
+                // 그 외 아군은 그냥 길을 막는 장애물로 취급
+            }
         }
     }
+    // MultiChessMan.cs
 
     // MultiChessMan.cs
 
@@ -774,7 +813,7 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (gameController == null) return;
 
-        // 1. 한 칸 전진 (이동 또는 합성)
+        // 1. 한 칸 전진 (이동 또는 특수 이동)
         if (gameController.PositionOnBoard(x, y))
         {
             GameObject targetPiece = gameController.GetPosition(x, y);
@@ -793,17 +832,19 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
                     }
                 }
             }
-            else if (targetPiece.GetComponent<MultiChessMan>().player == this.player) // 1-3. 칸에 아군이 있으면 -> 합성 체크
+            else if (targetPiece.GetComponent<MultiChessMan>().player == this.player) // 1-3. 칸에 아군이 있으면
             {
-                if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
+                // 목표가 바스티온이면 '특수 이동(주둔)' Plate 생성
+                if (targetPiece.name.Contains("BASTION"))
                 {
                     MovePlateFusionSpawn(x, y);
                 }
+                // (인접 합성 규칙은 이제 CheckAdjacentFusions가 담당하므로 여기서 삭제합니다.)
             }
         }
 
 
-        // 2. 대각선 이동 (공격 또는 합성)
+        // 2. 대각선 이동 (공격 또는 특수 이동)
         int attackDirectionY = (player == "white") ? yBoard + 1 : yBoard - 1;
         for (int dx = -1; dx <= 1; dx += 2)
         {
@@ -818,12 +859,14 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
                     {
                         MovePlateAttackSpawn(attackX, attackDirectionY);
                     }
-                    else // 2-2. 아군이면 -> 합성 체크
+                    else // 2-2. 아군이면
                     {
-                        if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
+                        // 목표가 바스티온이면 '특수 이동(주둔)' Plate 생성
+                        if (targetPiece.name.Contains("BASTION"))
                         {
                             MovePlateFusionSpawn(attackX, attackDirectionY);
                         }
+                        // (인접 합성 규칙은 이제 CheckAdjacentFusions가 담당하므로 여기서 삭제합니다.)
                     }
                 }
             }
@@ -856,24 +899,39 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     }
 
 
+    // MultiChessMan.cs
+
     [PunRPC]
     public void RPC_SetShield(bool status)
     {
-        // 상태가 변경될 때만 로그를 출력하도록 함
+        // 상태가 변경될 때만 실행
         if (this.hasShield != status)
         {
             this.hasShield = status;
-            if (status)
+            if (status) // 보호막이 '생성'될 때
             {
                 Debug.Log($"<color=cyan>{this.name} 보호막 생성!</color>");
+                // 아직 표시기가 없다면 새로 생성
+                if (shieldIndicatorPrefab != null && shieldIndicatorInstance == null)
+                {
+                    // 표시기를 생성하고, 이 기물의 자식으로 만들어 함께 움직이게 함
+                    shieldIndicatorInstance = Instantiate(shieldIndicatorPrefab, transform.position, Quaternion.identity);
+                    shieldIndicatorInstance.transform.SetParent(this.transform, true);
+                    // (선택 사항) 표시기 크기를 여기서 조절할 수 있습니다.
+                    shieldIndicatorInstance.transform.localScale = new Vector3(0.1f, 0.1f, 1f);
+                }
             }
-            else
+            else // 보호막이 '파괴'될 때
             {
                 Debug.Log($"<color=orange>{this.name} 보호막 파괴!</color>");
+                // 생성해두었던 표시기가 있다면 파괴
+                if (shieldIndicatorInstance != null)
+                {
+                    Destroy(shieldIndicatorInstance);
+                }
             }
         }
     }
-
 
 
     private void OnMouseUp()
@@ -934,20 +992,13 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (stream.IsWriting)
         {
-            // 소유자가 데이터를 보냄
             stream.SendNext(xBoard);
             stream.SendNext(yBoard);
-            stream.SendNext(transform.position);
         }
         else
         {
-            // 다른 클라이언트가 데이터 수신
-            xBoard = (int)stream.ReceiveNext();
-            yBoard = (int)stream.ReceiveNext();
-            Vector3 pos = (Vector3)stream.ReceiveNext();
-
-            // 좌표와 위치 갱신
-            transform.position = pos;
+            this.xBoard = (int)stream.ReceiveNext();
+            this.yBoard = (int)stream.ReceiveNext();
         }
     }
 
@@ -1018,11 +1069,15 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
                 // 인접한 칸에 아군 기물이 있다면
                 if (targetPiece != null && targetPiece.GetComponent<MultiChessMan>().GetPlayer() == this.player)
                 {
-                    // '합성 레시피 북'을 확인해서 합성이 가능한지 알아본다
-                    if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
+                    // 목표 기물이 '주둔 중'이 아닐 때만 합성을 시도합니다.
+                    if (!targetPiece.GetComponent<MultiChessMan>().IsGarrisoned())
                     {
-                        // 합성이 가능하면, 그 아군 기물 위치에 초록색 Plate를 생성
-                        MovePlateFusionSpawn(adjX, adjY);
+                        // '합성 레시피 북'을 확인해서 합성이 가능한지 알아본다
+                        if (gameController.GetFusionResultType(this.name, targetPiece.name) != null)
+                        {
+                            // 합성이 가능하면, 그 아군 기물 위치에 초록색 Plate를 생성
+                            MovePlateFusionSpawn(adjX, adjY);
+                        }
                     }
                 }
             }
@@ -1035,15 +1090,24 @@ public class MultiChessMan : MonoBehaviourPunCallbacks, IPunObservable
         return this.phalanxShieldActive;
     }
 
-    // 전방 보호막이 소모되었을 때 호출될 RPC
+    // MultiChessMan.cs
+
     [PunRPC]
     public void RPC_ConsumePhalanxShield()
     {
         if (this.phalanxShieldActive)
         {
             this.phalanxShieldActive = false;
-            // 그래픽이 없으므로, 대신 로그를 출력합니다.
             Debug.Log($"<color=orange>{this.name}의 전방 보호막이 파괴되었습니다!</color>");
+
+            // ▼▼▼ 여기에 표시기를 파괴하는 로직을 추가합니다 ▼▼▼
+            if (phalanxShieldIndicatorInstance != null)
+            {
+                Destroy(phalanxShieldIndicatorInstance);
+            }
         }
     }
+
+
+
 }

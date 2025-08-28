@@ -2,38 +2,53 @@ using UnityEngine;
 
 public class SoundManager : MonoBehaviour
 {
-    // 이 스크립트를 어디서든 쉽게 접근할 수 있도록 하는 '싱글턴' 패턴
     public static SoundManager Instance;
 
-    // Inspector 창에서 할당할 오디오 클립들
+    // 효과음(SFX) 클립들
     public AudioClip moveSound;
     public AudioClip killSound;
+    public AudioClip fusionSound;
 
-    // 실제 소리를 재생할 컴포넌트
-    private AudioSource audioSource;
+    // 게임 씬 BGM 클립
+    public AudioClip gameBGM;
+
+    private AudioSource sfxSource;
+    private AudioSource bgmSource; // 게임 씬 BGM을 위한 스피커
 
     void Awake()
     {
-        // 싱글턴 설정
-        if (Instance == null)
+        Instance = this;
+        // SoundManager 오브젝트에 있는 모든 AudioSource를 가져옴
+        AudioSource[] sources = GetComponents<AudioSource>();
+        sfxSource = sources[0];
+        // 만약 게임 씬 전용 BGM도 있다면, 두 번째 AudioSource를 사용
+        if (sources.Length > 1)
         {
-            Instance = this;
+            bgmSource = sources[1];
         }
-        else
-        {
-            Destroy(gameObject);
-        }
-
-        // 이 오브젝트에 붙어있는 AudioSource 컴포넌트를 가져옴
-        audioSource = GetComponent<AudioSource>();
     }
 
+    void Start()
+    {
+        // 로비 BGM은 멈추고, 게임 BGM을 시작
+        if (BGMManager.instance != null)
+        {
+            BGMManager.instance.gameObject.SetActive(false); // 로비 BGM 매니저를 비활성화
+        }
+        if (bgmSource != null && gameBGM != null)
+        {
+            bgmSource.clip = gameBGM;
+            bgmSource.loop = true;
+            bgmSource.Play();
+        }
+    }
+
+    // 아래 함수들은 이제 sfxSource를 사용하도록 변경
     public void PlayMoveSound()
     {
         if (moveSound != null)
         {
-            // PlayOneShot은 여러 사운드가 겹쳐서 재생될 수 있게 해줌
-            audioSource.PlayOneShot(moveSound);
+            sfxSource.PlayOneShot(moveSound);
         }
     }
 
@@ -41,7 +56,15 @@ public class SoundManager : MonoBehaviour
     {
         if (killSound != null)
         {
-            audioSource.PlayOneShot(killSound);
+            sfxSource.PlayOneShot(killSound);
+        }
+    }
+
+    public void PlayFusionSound()
+    {
+        if (fusionSound != null)
+        {
+            sfxSource.PlayOneShot(fusionSound);
         }
     }
 }

@@ -7,19 +7,60 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using UnityEngine.UIElements;
 
 public class MultiGame : MonoBehaviourPunCallbacks
 {
+
+    // MultiGame.cs 에 추가
+
+    public void DebugPrintBoard()
+    {
+        // 현재 턴 정보를 함께 출력
+        Debug.Log($"====== 현재 보드 상태 (턴: {currentPlayer}) ======");
+
+        // 보드판을 위에서부터 아래로 (rank 8 -> 1) 출력
+        for (int y = 7; y >= 0; y--)
+        {
+            string line = $"rank {y + 1}: "; // 각 줄의 시작 부분 (예: "rank 8: ")
+            for (int x = 0; x < 8; x++)
+            {
+                GameObject piece = positions[x, y];
+
+                if (piece == null)
+                {
+                    // 칸이 비어있으면 점(.)으로 표시
+                    line += " . ";
+                }
+                else
+                {
+                    // 기물이 있으면, 색깔과 종류의 첫 글자로 축약해서 표시
+                    MultiChessMan cm = piece.GetComponent<MultiChessMan>();
+                    string color = (cm.GetPlayer() == "white") ? "W" : "B";
+                    string type = piece.name.Split('_')[1].Substring(0, 1); // 예: "pawn" -> "P", "KNIGHT" -> "K"
+
+                    line += $" {color}{type} ";
+                }
+            }
+            // 완성된 한 줄을 콘솔에 출력
+            Debug.Log(line);
+        }
+        Debug.Log("========================================");
+    }
     public GameObject chesspiece;
     public Sprite boardSprite;
     public Sprite backgroundSprite;
     public PromotionManager promotionManager;
+    public GameObject gameOverPanel;
+    public Image victoryImage;
+    public Image defeatImage;
+    public Button returnToLobbyButton;
+    public GameObject bastionPlatePrefab;
 
     // Positions and team for each chesspiece
     private GameObject[,] positions = new GameObject[8, 8];
     private GameObject[] playerBlack = new GameObject[16];
     private GameObject[] playerWhite = new GameObject[16];
+
 
     private string myPlayerColor;
     private string currentPlayer;
@@ -28,8 +69,8 @@ public class MultiGame : MonoBehaviourPunCallbacks
     public bool isInteractionBlocked = false;
     private PhotonView pv;
 
-    public float tileSize = 0.66f;                 // �ڵ� ���� ������ �⺻��
-    public Vector2 boardOrigin = Vector2.zero;     // 0,0 ĭ(=a1)�� ���� ��ǥ(����)
+    public float tileSize = 0.66f;                 
+    public Vector2 boardOrigin = Vector2.zero;     
     public float boardWorldWidth = 0f;
     public float boardWorldHeight = 0f;
 
@@ -39,7 +80,6 @@ public class MultiGame : MonoBehaviourPunCallbacks
     void Awake()
     {
         myPlayerColor = PlayerColorManager.instance.GetMyToggle() ? "white" : "black";
-        Debug.Log("�� �÷��̾� ����: " + myPlayerColor);
     }
 
     void Start()
@@ -50,6 +90,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         background.transform.position = new Vector3(0f, 0f, 0);
         var backgroundSr = background.AddComponent<SpriteRenderer>();
         backgroundSr.sprite = backgroundSprite;
+        background.AddComponent<BoxCollider2D>();
         backgroundSr.sortingLayerName = "Board";
         backgroundSr.sortingOrder = 0;
 
@@ -58,6 +99,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         board.transform.position = new Vector3(0f, 0f, 0);
         var boardSr = board.AddComponent<SpriteRenderer>();
         boardSr.sprite = boardSprite;
+        board.AddComponent<BoxCollider2D>();
         boardSr.sortingLayerName = "Board";
         boardSr.sortingOrder = 1;
 
@@ -90,6 +132,25 @@ public class MultiGame : MonoBehaviourPunCallbacks
             }
 
         }
+
+        if (returnToLobbyButton != null)
+        {
+            returnToLobbyButton.onClick.AddListener(OnReturnToLobbyClicked);
+        }
+    }
+
+    public void OnReturnToLobbyClicked()
+    {
+        // 현재 입장해 있는 포톤 룸을 떠납니다.
+        PhotonNetwork.LeaveRoom();
+    }
+
+    // LeaveRoom()이 성공적으로 완료되면 포톤이 자동으로 이 함수를 호출해줍니다.
+    public override void OnLeftRoom()
+    {
+        // 로비 씬을 로드합니다. SceneManager.LoadScene 대신 PhotonNetwork.LoadLevel을 사용하는 것이 안전합니다.
+        // "Lobby" 부분은 실제 로비 씬의 이름과 정확히 일치해야 합니다.
+        PhotonNetwork.LoadLevel("LobbyScene");
     }
 
     public void RecalculateBoardMetrics()
@@ -234,9 +295,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
         }
     }
 
-    // MultiGame.cs
 
-    // MultiGame.cs �� RequestMovePiece �Լ�
     [PunRPC]
     public void RequestMovePiece(int attackerID, int targetX, int targetY, int capturedID, bool isCastle)
     {
@@ -246,84 +305,86 @@ public class MultiGame : MonoBehaviourPunCallbacks
         if (attackerView == null) return;
         MultiChessMan attackerCm = attackerView.GetComponent<MultiChessMan>();
 
-        // ���� �ֵ� ���� ������ ���⼭ ���� ó���մϴ� ����
-        bool wasGarrisoned = attackerCm.IsGarrisoned();
-        int bastionToReleaseID = -1;
 
-        if (wasGarrisoned)
-        {
-            bastionToReleaseID = attackerCm.GetGarrisonedBastionID();
+        if (attackerCm.IsGarrisoned())
+        {            
+            int bastionToReleaseID = attackerCm.GetGarrisonedBastionID();
             PhotonView bastionView = PhotonView.Find(bastionToReleaseID);
-
+            Debug.Log(bastionView);
             if (bastionView != null)
             {
                 bastionView.RPC("RPC_SetVisible", RpcTarget.All, true);
+                SetPosition(bastionView.gameObject);              
             }
 
             attackerView.RPC("RPC_SetGarrisonStatus", RpcTarget.All, false, -1);
+
         }
 
         if (isCastle)
         {
             photonView.RPC("RPC_ExecuteCastling", RpcTarget.All, attackerID, targetX);
         }
-        else
+        else if (capturedID != -1) // 공격인 경우
         {
-            if (capturedID != -1) // ������ ���
+            PhotonView capturedView = PhotonView.Find(capturedID);
+            if (capturedView != null)
             {
-                PhotonView capturedView = PhotonView.Find(capturedID);
-                if (capturedView != null)
+                MultiChessMan capturedCm = capturedView.GetComponent<MultiChessMan>();
+
+                // 킹을 잡았는지 최우선으로 확인
+                if (capturedCm.gameObject.name.Contains("king"))
                 {
-                    MultiChessMan capturedCm = capturedView.GetComponent<MultiChessMan>();
+                    string winner = attackerCm.GetPlayer();
+                    photonView.RPC("RPC_EndGame", RpcTarget.All, winner);
+                    return; // 게임 종료
+                }
 
-                    // ���� �ȶ�ũ�� ��� ������ ���⿡ �߰��մϴ� ����
-                    // 1. ���ݹ޴� �⹰�� '�ȶ�ũ��'�̰�, '���� ��ȣ��'�� Ȱ��ȭ �������� Ȯ��
-                    if (capturedCm.gameObject.name.Contains("PHALANX") && capturedCm.HasPhalanxShield())
-                    {
-                        // 2. ������ ������ '����'���� Ȯ�� (���� ������ ������)
-                        bool isSameFile = (attackerCm.GetXBoard() == capturedCm.GetXBoard());
-                        string phalanxColor = capturedCm.GetPlayer();
-                        int attackerY = attackerCm.GetYBoard();
-                        int phalanxY = capturedCm.GetYBoard();
+                // 팔랑크스 전방 보호막 확인
+                bool isPhalanxProtected = false;
+                if (capturedCm.gameObject.name.Contains("PHALANX") && capturedCm.HasPhalanxShield())
+                {
+                    bool isSameFile = (attackerCm.GetXBoard() == capturedCm.GetXBoard());
+                    string phalanxColor = capturedCm.GetPlayer();
+                    int attackerY = attackerCm.GetYBoard();
+                    int phalanxY = capturedCm.GetYBoard();
+                    bool isFrontalAttack = (phalanxColor == "white" && attackerY > phalanxY) || (phalanxColor == "black" && attackerY < phalanxY);
 
-                        bool isFrontalAttack = (phalanxColor == "white" && attackerY > phalanxY) ||
-                                               (phalanxColor == "black" && attackerY < phalanxY);
-
-                        // 3. ���� '���� ������ �� ���� ����'�� �´ٸ�, ������ ���� ��ȣ���� �Ҹ�
-                        if (isSameFile && isFrontalAttack)
-                        {
-                            Debug.Log("�ȶ�ũ���� ���� ������ ����߽��ϴ�!");
-                            capturedView.RPC("RPC_ConsumePhalanxShield", RpcTarget.All);
-                            // �����ڴ� �̵����� �ʰ� �ϸ� �Ѿ�ϴ�.
-                        }
-                        else // ���� ������ �ƴ϶�� (�밢��, ����, �Ĺ�)
-                        {
-                            // ��ȣ���� �ҿ�����Ƿ�, �Ϲ� �⹰ó�� �׳� �����ϴ�.
-                            capturedView.RPC("DestroySelf", RpcTarget.AllBuffered);
-                            attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, true);
-                        }
-                    }
-                    // 4. ���ݹ޴� �⹰�� �ȶ�ũ���� �ƴϰų�, ��ȣ���� ���� ���
-                    else if (capturedCm.HasShield()) // �׽������� ���� ��ȣ�� Ȯ��
+                    if (isSameFile && isFrontalAttack)
                     {
-                        capturedView.RPC("RPC_SetShield", RpcTarget.All, false);
-                    }
-                    else // �ƹ� ��ȣ���� ���� �Ϲ� �⹰
-                    {
-                        capturedView.RPC("DestroySelf", RpcTarget.AllBuffered);
-                        attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, true);
+                        isPhalanxProtected = true;
+                        capturedView.RPC("RPC_ConsumePhalanxShield", RpcTarget.All);
                     }
                 }
+
+                // 개인 보호막 확인
+                if (capturedCm.HasShield())
+                {
+                    capturedView.RPC("RPC_SetShield", RpcTarget.All, false);
+                }
+                // 팔랑크스 보호막이 발동했다면
+                else if (isPhalanxProtected)
+                {
+                    // 아무것도 하지 않음 (공격자 이동 방지)
+                }
+                // 아무 보호막도 없다면 (공격 성공)
+                else
+                {
+                    capturedView.RPC("DestroySelf", RpcTarget.AllBuffered);
+                    attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, true);
+                }
             }
-            else // ������ �ƴ� �Ϲ� �̵��� ���
+        }
+        else // ������ �ƴ� �Ϲ� �̵��� ���
             {
                 attackerView.RPC("RPC_AnimateMove", RpcTarget.All, targetX, targetY, false);
             }
-        }
-
         attackerView.RPC("RPC_UpdateMovedStatus", RpcTarget.All);
         CallNextTurn();
+        DebugPrintBoard();
     }
+
+
     // ĳ���� ���� ���θ� Ȯ���ϴ� �� �Լ�
     public bool CanCastle(int kingX, int kingY, bool isKingSide)
     {
@@ -389,15 +450,12 @@ public class MultiGame : MonoBehaviourPunCallbacks
         int y = kingCm.GetYBoard();
         bool isKingSide = kingTargetX > startKingX;
 
-        // 1. ŷ �̵�
         SetPositionEmpty(startKingX, y);
 
-        // ���� �� �κ��� �����Ǿ����ϴ� ����
-        kingObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, kingTargetX, y, false);         // 2. �ٲ� ���� ��ǥ�� ���� ���� ��ġ�� �ű�� �Ѵ�.
+        kingObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, kingTargetX, y, false);         
 
         SetPosition(kingObj);
 
-        // 2. �� ã�� �� �̵�
         int rookStartX = isKingSide ? 7 : 0;
         int rookTargetX = isKingSide ? kingTargetX - 1 : kingTargetX + 1;
 
@@ -407,7 +465,6 @@ public class MultiGame : MonoBehaviourPunCallbacks
             MultiChessMan rookCm = rookObj.GetComponent<MultiChessMan>();
             SetPositionEmpty(rookStartX, y);
 
-            // ���� �赵 �Ȱ��� �����Ǿ����ϴ� ����
             rookObj.GetComponent<PhotonView>().RPC("RPC_AnimateMove", RpcTarget.All, rookTargetX, y, false);
 
             SetPosition(rookObj);
@@ -421,10 +478,24 @@ public class MultiGame : MonoBehaviourPunCallbacks
     {
         if (!PhotonNetwork.IsMasterClient) return;
 
-        // 1. ���� ���� ������ ���� �ı�
+        // 1. 잡을 말이 있는지, 그리고 그 말이 킹인지 확인
         if (capturedID != -1)
         {
-            PhotonView.Find(capturedID)?.RPC("DestroySelf", RpcTarget.AllBuffered);
+            PhotonView capturedView = PhotonView.Find(capturedID);
+            if (capturedView != null)
+            {
+                // ▼▼▼ 여기에 게임 종료 확인 로직을 추가합니다! ▼▼▼
+                if (capturedView.gameObject.name.Contains("king"))
+                {
+                    // 공격한 폰의 색깔이 승자
+                    string winner = PhotonView.Find(pawnViewID).GetComponent<MultiChessMan>().GetPlayer();
+                    photonView.RPC("RPC_EndGame", RpcTarget.All, winner);
+                    return; // 게임이 끝났으므로 더 이상 프로모션을 진행하지 않음
+                }
+
+                // 킹이 아니라면, 평소처럼 기물을 파괴
+                capturedView.RPC("DestroySelf", RpcTarget.AllBuffered);
+            }
         }
 
         // 2. ���θ���� ���� ������ ������ �� �ı�
@@ -462,34 +533,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
     }
 
 
-    // ��û 2 ó��: �÷��̾��� ������ �޾� ���� ���θ���� �����ϰ� ���� �ѱ�
-    [PunRPC]
-    public void RequestPromotion(int pawnViewID, string pieceType)
-    {
-        if (!PhotonNetwork.IsMasterClient) return;
-
-        GameObject pawnObj = PhotonView.Find(pawnViewID)?.gameObject;
-        if (pawnObj == null) return;
-
-        MultiChessMan pawnCm = pawnObj.GetComponent<MultiChessMan>();
-        int x = pawnCm.GetXBoard();
-        int y = pawnCm.GetYBoard();
-        string playerColor = pawnCm.GetPlayer();
-
-        // 1. ���� ���� ���� �迭���� �����ϰ� ��Ʈ��ũ���� �ı�
-        SetPositionEmpty(x, y);
-        PhotonNetwork.Destroy(pawnObj);
-
-        // 2. �� �⹰ ����
-        string newPieceName = playerColor + "_" + pieceType;
-        Create(newPieceName, x, y); // ������ Create �Լ��� ��Ȱ��
-
-        // ���� ���θ���� ��������, �ٽ� ��ȣ�ۿ��� ����ϵ��� RPC ȣ�� ����
-        photonView.RPC("RPC_SetInteractionState", RpcTarget.All, false);
-
-        // 3. ��� �۾��� �������Ƿ� ���� �ѱ�
-        CallNextTurn();
-    }
+    
 
     [PunRPC]
     public void RPC_SetInteractionState(bool isBlocked)
@@ -562,9 +606,33 @@ public class MultiGame : MonoBehaviourPunCallbacks
 
         if (movingPiece == null || stationaryPiece == null) return;
 
-        // 1. �ռ��� �⹰���� ���� ��������
+        // 1. 합쳐지는 두 기물 중 주둔 중인 기물이 있는지 확인합니다.
         MultiChessMan movingCm = movingPiece.GetComponent<MultiChessMan>();
         MultiChessMan stationaryCm = stationaryPiece.GetComponent<MultiChessMan>();
+
+        // 움직이는 기물이 주둔 중이었다면
+        if (movingCm.IsGarrisoned())
+        {
+            int bastionID = movingCm.GetGarrisonedBastionID();
+            PhotonView bastionView = PhotonView.Find(bastionID);
+            if (bastionView != null)
+            {
+                bastionView.RPC("RPC_SetVisible", RpcTarget.All, true);
+                SetPosition(bastionView.gameObject);
+            }
+        }
+        // 가만히 있던 기물이 주둔 중이었다면 (이런 경우는 거의 없지만, 안전을 위해)
+        if (stationaryCm.IsGarrisoned())
+        {
+            int bastionID = stationaryCm.GetGarrisonedBastionID();
+            PhotonView bastionView = PhotonView.Find(bastionID);
+            if (bastionView != null)
+            {
+                bastionView.RPC("RPC_SetVisible", RpcTarget.All, true);
+                SetPosition(bastionView.gameObject);
+            }
+        }
+
         int targetX = stationaryCm.GetXBoard();
         int targetY = stationaryCm.GetYBoard();
         string playerColor = movingCm.GetPlayer();
@@ -593,7 +661,7 @@ public class MultiGame : MonoBehaviourPunCallbacks
             {
                 for (int j = -1; j <= 1; j++)
                 {
-                    if (i == 0 && j == 0) continue; // �ڱ� �ڽ��� ����
+                    if (i == 0 && j == 0) continue; 
 
                     int checkX = targetX + i;
                     int checkY = targetY + j;
@@ -601,10 +669,8 @@ public class MultiGame : MonoBehaviourPunCallbacks
                     if (PositionOnBoard(checkX, checkY))
                     {
                         GameObject pieceToShield = GetPosition(checkX, checkY);
-                        // �װ��� �⹰�� �ְ�, �� �⹰�� '�Ʊ�'�� ���
                         if (pieceToShield != null && pieceToShield.GetComponent<MultiChessMan>().GetPlayer() == ownerColor)
                         {
-                            // ��ȣ���� �ο��϶�� RPC�� ����
                             pieceToShield.GetComponent<PhotonView>().RPC("RPC_SetShield", RpcTarget.All, true);
                         }
                     }
@@ -613,12 +679,10 @@ public class MultiGame : MonoBehaviourPunCallbacks
         }
         photonView.RPC("RPC_SetInteractionState", RpcTarget.All, false);
 
-        // 5. �� �ѱ��
         CallNextTurn();
     }
 
 
-    // MultiGame.cs �� ���� �߰�
     [PunRPC]
     public void RPC_PlacePieceOnBoard(int viewID)
     {
@@ -629,33 +693,85 @@ public class MultiGame : MonoBehaviourPunCallbacks
         }
     }
 
-    // MultiGame.cs �� �߰�
 
     [PunRPC]
     public void RPC_StartFusionAnimation(int movingPieceID, int stationaryPieceID)
     {
+
+        // 모든 클라이언트가 애니메이션 시작과 동시에 합성 효과음을 재생합니다.
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlayFusionSound();
+        }
+
         PhotonView movingView = PhotonView.Find(movingPieceID);
         PhotonView stationaryView = PhotonView.Find(stationaryPieceID);
 
         if (movingView != null && stationaryView != null)
         {
-            // �����̴� �⹰����, ������ �ִ� �⹰�� ���� �ִϸ��̼��� �����϶�� ����
             movingView.GetComponent<MultiChessMan>().StartFusionAnimationWith(stationaryView.gameObject);
         }
     }
 
-
-    //Update() ����Ƽ���� �����ϴ� ����Ƽ �̺�Ʈ �޼ҵ�� �������� ����ɶ����� ȣ��Ǵ� �޼ҵ� �Դϴ�
-    //gameOver�� true�̰� ���콺 ��Ŭ�� �����϶� ������ ������մϴ�.
-    public void Update()
+    [PunRPC]
+    public void RPC_EndGame(string winnerColor)
     {
-        if (gameOver == true && Input.GetMouseButtonDown(0))
-        {
-            gameOver = false;
+        // 게임 상태를 종료로 변경
+        gameOver = true;
+        isInteractionBlocked = true; // 모든 입력 비활성화
 
-            SceneManager.LoadScene("MultiTestGameScene");
+        // 게임오버 패널 활성화
+        gameOverPanel.SetActive(true);
+
+        // 내가 승자인지 확인
+        if (winnerColor == myPlayerColor)
+        {
+            victoryImage.gameObject.SetActive(true);
+            defeatImage.gameObject.SetActive(false);
+        }
+        else // 내가 패자라면
+        {
+            victoryImage.gameObject.SetActive(false);
+            defeatImage.gameObject.SetActive(true);
         }
     }
+
+    // MultiGame.cs
+
+    public void Update()
+    {
+        // 1. 마우스 왼쪽 버튼 클릭을 감지 (게임오버가 아닐 때만)
+        if (!gameOver && Input.GetMouseButtonDown(0))
+        {
+            // 2. 카메라에서 마우스 위치로 보이지 않는 광선을 쏨
+            RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
+
+            // 3. 광선에 무언가 맞았는지 확인
+            if (hit.collider != null)
+            {
+                // 4. 만약 맞은 것이 '기물'도 아니고 '무브플레이트'도 아니라면 (즉, 보드나 배경이라면)
+                if (hit.collider.GetComponent<MultiChessMan>() == null && hit.collider.GetComponent<MultiMovePlate>() == null)
+                {
+                    // 모든 MovePlate를 파괴
+                    DestroyMovePlates();
+                }
+            }
+            // 5. 광선에 아무것도 맞지 않았을 경우 (완전한 허공 클릭)
+            else
+            {
+                // 이 경우에도 모든 MovePlate를 파괴
+                DestroyMovePlates();
+            }
+        }
+
+        // 기존의 게임 재시작 로직은 그대로 둡니다.
+        //if (gameOver == true && Input.GetMouseButtonDown(0))
+        //{
+        //    gameOver = false;
+        //    SceneManager.LoadScene("MultiTestGameScene");
+        //}
+    }
+
 
     public void Winner(string playerWinner)
     {
